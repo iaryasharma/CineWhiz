@@ -1,4 +1,3 @@
-// app/api/watchlist/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../auth/[...nextauth]/route';
@@ -7,7 +6,7 @@ import Watchlist from '@/models/Watchlist';
 import mongoose from 'mongoose';
 
 // Get user's watchlist
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     

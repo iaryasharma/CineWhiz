@@ -11,6 +11,13 @@ interface WatchlistButtonProps {
   movieId: number
 }
 
+interface WatchlistItem {
+  movieId: number
+  // Add other properties as needed based on your actual data structure
+  addedAt?: string
+  userId?: string
+}
+
 export default function WatchlistButton({ movieId }: WatchlistButtonProps) {
   const { data: session } = useSession()
   const [isInWatchlist, setIsInWatchlist] = useState(false)
@@ -33,9 +40,10 @@ export default function WatchlistButton({ movieId }: WatchlistButtonProps) {
 
         const data = await response.json()
         const watchlist = data.watchlist || []
-        setIsInWatchlist(watchlist.some((item: any) => item.movieId === movieId))
+        setIsInWatchlist(watchlist.some((item: WatchlistItem) => item.movieId === movieId))
       } catch (error) {
         console.error("Error checking watchlist:", error)
+        toast.error("Failed to load watchlist status")
       } finally {
         setIsLoading(false)
       }
@@ -101,6 +109,7 @@ export default function WatchlistButton({ movieId }: WatchlistButtonProps) {
             ? "bg-gray-800 hover:bg-gray-700 border border-white text-white" 
             : "bg-white hover:bg-gray-200 text-black"
         }`}
+        aria-label={isInWatchlist ? "Remove from My List" : "Add to My List"}
       >
         {isLoading ? (
           <span className="inline-block w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />

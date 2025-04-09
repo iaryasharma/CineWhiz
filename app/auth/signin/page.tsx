@@ -1,11 +1,8 @@
 "use client"
 import { useState, useEffect } from "react"
 import { signIn } from "next-auth/react"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
 
 export default function SignIn() {
-  const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [backgroundImage, setBackgroundImage] = useState("")
   
@@ -99,7 +96,7 @@ export default function SignIn() {
                 By signing in, you agree to our Terms of Service and Privacy Policy.
               </p>
               <p className="mt-2 text-center text-xs">
-                This page is protected by Google reCAPTCHA to ensure you're not a bot.
+                This page is protected by Google reCAPTCHA to ensure you&apos;re not a bot.
               </p>
             </div>
           </div>

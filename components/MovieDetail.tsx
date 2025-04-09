@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import type { Movie } from "@/types"
 import { formatDate } from "@/lib/utils"
@@ -18,6 +18,12 @@ interface MovieDetailProps {
   movie: Movie
   isOpen: boolean
   onClose: () => void
+}
+
+interface VideoResult {
+  type: string;
+  site: string;
+  key: string;
 }
 
 const customStyles = {
@@ -43,8 +49,8 @@ const customStyles = {
 }
 
 export default function MovieDetail({ movie, isOpen, onClose }: MovieDetailProps) {
-  const [posterUrl, setPosterUrl] = useState<string | null>(null)
   const [backdropUrl, setBackdropUrl] = useState<string | null>(null)
+  const [trailerUrl, setTrailerUrl] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -53,9 +59,16 @@ export default function MovieDetail({ movie, isOpen, onClose }: MovieDetailProps
       
       setIsLoading(true);
       try {
+        const apiKey = process.env.NEXT_PUBLIC_TMDB_API_KEY;
+        if (!apiKey) {
+          console.error("TMDB API key is not defined");
+          setIsLoading(false);
+          return;
+        }
+        
         // First try to get by ID
         const response = await fetch(
-          `https://api.themoviedb.org/3/movie/${movie.id}?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}`,
+          `https://api.themoviedb.org/3/movie/${movie.id}?api_key=${apiKey}`,
         )
 
         if (!response.ok) {
@@ -63,19 +76,33 @@ export default function MovieDetail({ movie, isOpen, onClose }: MovieDetailProps
         }
 
         const data = await response.json()
-
-        if (data.poster_path) {
-          setPosterUrl(`https://image.tmdb.org/t/p/w500${data.poster_path}`)
-        }
         
         if (data.backdrop_path) {
           setBackdropUrl(`https://image.tmdb.org/t/p/original${data.backdrop_path}`)
         }
         
+        // Fetch movie trailer
+        const videosResponse = await fetch(
+          `https://api.themoviedb.org/3/movie/${movie.id}/videos?api_key=${apiKey}`
+        )
+        
+        if (videosResponse.ok) {
+          const videosData = await videosResponse.json()
+          const trailer = videosData.results?.find(
+            (video: VideoResult) => 
+              (video.type === 'Trailer' || video.type === 'Teaser') && 
+              video.site === 'YouTube'
+          )
+          
+          if (trailer) {
+            setTrailerUrl(`https://www.youtube.com/watch?v=${trailer.key}`)
+          }
+        }
+        
         // If no data found by ID, try search
-        if (!data.poster_path && !data.backdrop_path) {
+        if (!data.backdrop_path) {
           const searchResponse = await fetch(
-            `https://api.themoviedb.org/3/search/movie?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&query=${encodeURIComponent(movie.title)}`,
+            `https://api.themoviedb.org/3/search/movie?api_key=${apiKey}&query=${encodeURIComponent(movie.title)}`,
           )
 
           if (!searchResponse.ok) {
@@ -85,26 +112,50 @@ export default function MovieDetail({ movie, isOpen, onClose }: MovieDetailProps
           const searchData = await searchResponse.json()
 
           if (searchData.results && searchData.results.length > 0) {
-            if (searchData.results[0].poster_path) {
-              setPosterUrl(`https://image.tmdb.org/t/p/w500${searchData.results[0].poster_path}`)
+            const foundMovie = searchData.results[0]
+            
+            if (foundMovie.backdrop_path) {
+              setBackdropUrl(`https://image.tmdb.org/t/p/original${foundMovie.backdrop_path}`)
             }
             
-            if (searchData.results[0].backdrop_path) {
-              setBackdropUrl(`https://image.tmdb.org/t/p/original${searchData.results[0].backdrop_path}`)
+            // Try to get trailer for the found movie
+            if (!trailerUrl && foundMovie.id) {
+              const foundVideosResponse = await fetch(
+                `https://api.themoviedb.org/3/movie/${foundMovie.id}/videos?api_key=${apiKey}`
+              )
+              
+              if (foundVideosResponse.ok) {
+                const foundVideosData = await foundVideosResponse.json()
+                const foundTrailer = foundVideosData.results?.find(
+                  (video: VideoResult) => 
+                    (video.type === 'Trailer' || video.type === 'Teaser') && 
+                    video.site === 'YouTube'
+                )
+                
+                if (foundTrailer) {
+                  setTrailerUrl(`https://www.youtube.com/watch?v=${foundTrailer.key}`)
+                }
+              }
             }
           }
         }
       } catch (error) {
         console.error("Error fetching movie media:", error)
-        setPosterUrl(null)
         setBackdropUrl(null)
+        setTrailerUrl(null)
       } finally {
         setIsLoading(false)
       }
     }
 
     fetchMovieMedia()
-  }, [movie.id, movie.title, isOpen])
+  }, [movie.id, movie.title, isOpen, trailerUrl])
+
+  const handleTrailerClick = () => {
+    if (trailerUrl) {
+      window.open(trailerUrl, '_blank', 'noopener,noreferrer');
+    }
+  }
 
   return (
     <Modal 
@@ -132,7 +183,7 @@ export default function MovieDetail({ movie, isOpen, onClose }: MovieDetailProps
           ) : backdropUrl ? (
             <>
               <Image
-                src={backdropUrl || "/placeholder.svg"}
+                src={backdropUrl}
                 alt={movie.title}
                 fill
                 sizes="(max-width: 900px) 100vw, 900px"
@@ -153,9 +204,13 @@ export default function MovieDetail({ movie, isOpen, onClose }: MovieDetailProps
             <h2 className="text-3xl md:text-4xl font-bold mb-4">{movie.title}</h2>
             
             <div className="flex flex-wrap gap-4 mb-4">
-              <button className="flex items-center justify-center gap-2 bg-white text-black px-6 py-2 rounded hover:bg-opacity-80 transition">
+              <button 
+                className={`flex items-center justify-center gap-2 bg-white text-black px-6 py-2 rounded hover:bg-opacity-80 transition ${!trailerUrl ? 'opacity-50 cursor-not-allowed' : ''}`}
+                onClick={handleTrailerClick}
+                disabled={!trailerUrl}
+              >
                 <PlayIcon className="h-5 w-5" />
-                Play
+                Trailer
               </button>
               
               <WatchlistButton movieId={movie.id} />
@@ -163,7 +218,7 @@ export default function MovieDetail({ movie, isOpen, onClose }: MovieDetailProps
               {movie.vote_average !== undefined && (
                 <div className="flex items-center bg-gray-800 bg-opacity-60 px-3 py-2 rounded-md border border-gray-700">
                   <StarIcon className="h-5 w-5 text-yellow-500 mr-1" />
-                  <span className="text-white font-medium">{Math.round(movie.vote_average * 10)}%</span>
+                  <span className="text-white font-medium">{movie.vote_average.toFixed(1)}/10</span>
                 </div>
               )}
             </div>
@@ -177,7 +232,7 @@ export default function MovieDetail({ movie, isOpen, onClose }: MovieDetailProps
                 {movie.vote_average !== undefined && (
                   <div className="flex items-center">
                     <StarIcon className="h-5 w-5 text-yellow-500 mr-1" />
-                    <span className="text-green-500 font-medium">{Math.round(movie.vote_average * 10)}% Match</span>
+                    <span className="text-white font-medium">{movie.vote_average.toFixed(1)}/10</span>
                   </div>
                 )}
                 
@@ -219,12 +274,12 @@ export default function MovieDetail({ movie, isOpen, onClose }: MovieDetailProps
                   <span>{movie.original_language.toUpperCase()}</span>
                 </div>
               )}
-            </div>
+            </div>  
           </div>
           
           {/* Recommendations Section */}
           {movie.id && movie.title && (
-            <RecommendationRow movieId={movie.id} movieTitle={movie.title} />
+            <RecommendationRow movieId={movie.id} movieTitle={movie.title} onMovieClick={onClose} />
           )}
         </div>
       </div>

@@ -4,6 +4,7 @@
 import { useState, useEffect } from "react"
 import Image from "next/image"
 import { PlayIcon, PlusIcon, ChevronDownIcon } from "@heroicons/react/24/solid"
+import { StarIcon } from "@heroicons/react/24/solid"
 import type { Movie } from "@/types"
 
 interface MovieCardProps {
@@ -79,7 +80,7 @@ export default function MovieCard({ movie }: MovieCardProps) {
           alt={movie.title}
           fill
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          className="object-cover"
+          className={`object-cover transition-all duration-200 ${isHovering ? 'brightness-50' : ''}`}
           priority={false}
         />
       ) : (
@@ -88,9 +89,9 @@ export default function MovieCard({ movie }: MovieCardProps) {
         </div>
       )}
 
-      {/* Hover Card with Info */}
+      {/* Hover Card with Info - Only Show On Hover */}
       {isHovering && (
-        <div className="absolute inset-0 bg-gray-900 bg-opacity-80 flex flex-col justify-between p-2">
+        <div className="absolute inset-0 flex flex-col justify-between p-2 z-10">
           <div>
             <h3 className="font-bold text-white text-sm mb-1">{movie.title}</h3>
             
@@ -99,9 +100,12 @@ export default function MovieCard({ movie }: MovieCardProps) {
             )}
             
             {movie.vote_average !== undefined && (
-              <p className="text-xs text-green-500 font-medium mb-1">
-                {Math.round(movie.vote_average * 10)}% Match
-              </p>
+              <div className="flex items-center text-xs mb-1">
+                <StarIcon className="h-3 w-3 text-yellow-500 mr-1" />
+                <span className="text-white font-medium">
+                  {movie.vote_average.toFixed(1)}/10
+                </span>
+              </div>
             )}
           </div>
           

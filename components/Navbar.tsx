@@ -204,13 +204,6 @@ export default function Navbar() {
               >
                 Home
               </Link>
-              <Link 
-                href="/movies" 
-                className="text-gray-300 hover:bg-gray-800 hover:text-white px-4 py-3"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Movies
-              </Link>
 
               {status === "loading" ? (
                 <div className="px-4 py-3">
