@@ -1,7 +1,7 @@
 // components/MovieGrid.tsx
 "use client"
 
-import { useState, useEffect } from "react"
+import React from "react"
 import MovieCard from "./MovieCard"
 import type { Movie } from "@/types"
 
