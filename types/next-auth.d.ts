@@ -1,17 +1,21 @@
 // types/next-auth.d.ts
 import NextAuth from "next-auth";
+import { JWT } from "next-auth/jwt";
 
 declare module "next-auth" {
-  /**
-   * Extend the built-in session types
-   */
   interface Session {
     user: {
-      /** The user's MongoDB ObjectId as a string */
+      /** MongoDB ObjectId */
       id?: string;
       name?: string | null;
       email?: string | null;
       image?: string | null;
-    }
+    };
+  }
+}
+
+declare module "next-auth/jwt" {
+  interface JWT {
+    id?: string;
   }
 }

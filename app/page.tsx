@@ -179,7 +179,7 @@ export default function HomePage() {
 
               <div className="flex items-center gap-4 mb-4">
                 {selectedMovie.vote_average && (
-                  <span className="inline-flex items-center justify-center bg-gray-800 text-white font-bold px-3 py-1 rounded">
+                  <span className="inline-flex items-center justify-center bg-yellow-500 text-white font-bold px-3 py-1 rounded">
                     {selectedMovie.vote_average.toFixed(1)}
                   </span>
                 )}

@@ -1,10 +1,9 @@
-// lib/auth.ts
 import GoogleProvider from "next-auth/providers/google";
 import { NextAuthOptions } from "next-auth";
 import { MongoDBAdapter } from "@auth/mongodb-adapter";
 import { MongoClient } from "mongodb";
 
-// Database client for the adapter
+// MongoDB client setup
 if (!process.env.MONGODB_URI) {
   throw new Error("Please add your MongoDB URI to .env.local");
 }
@@ -12,7 +11,7 @@ if (!process.env.MONGODB_URI) {
 const client = new MongoClient(process.env.MONGODB_URI);
 export const clientPromise = client.connect();
 
-// Auth options to be used in route handler and anywhere else needed
+// ✅ NextAuth options
 export const authOptions: NextAuthOptions = {
   adapter: MongoDBAdapter(clientPromise),
   providers: [
@@ -22,9 +21,16 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    session: async ({ session, user }) => {
-      if (session?.user) {
-        session.user.id = user.id;
+    async jwt({ token, user }) {
+      // When user logs in for the first time
+      if (user) {
+        token.id = user.id;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (session?.user && token?.id) {
+        session.user.id = token.id as string;
       }
       return session;
     },
