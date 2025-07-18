@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { spawn } from 'child_process'
 import path from 'path'
 import fs from 'fs'
 
@@ -87,54 +86,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Try Python-based recommendation first
-    try {
-      const pythonScript = path.join(process.cwd(), 'api', 'recommend.py')
-      
-      if (fs.existsSync(pythonScript)) {
-        const pythonExecutable = process.platform === 'win32' ? 'C:/Users/as706/AppData/Local/Programs/Python/Python38/python.exe' : 'python3'
-        
-        const result = await new Promise<Record<string, unknown>>((resolve, reject) => {
-          const pythonProcess = spawn(pythonExecutable, [pythonScript, title])
-          
-          let stdout = ''
-          let stderr = ''
-          
-          pythonProcess.stdout.on('data', (data) => {
-            stdout += data.toString()
-          })
-          
-          pythonProcess.stderr.on('data', (data) => {
-            stderr += data.toString()
-          })
-          
-          pythonProcess.on('close', (code) => {
-            if (code === 0) {
-              try {
-                const parsed = JSON.parse(stdout)
-                resolve(parsed)
-              } catch {
-                reject(new Error('Failed to parse Python output'))
-              }
-            } else {
-              reject(new Error(`Python process exited with code ${code}: ${stderr}`))
-            }
-          })
-          
-          pythonProcess.on('error', (error) => {
-            reject(error)
-          })
-        })
-
-        if (result && !('error' in result)) {
-          return NextResponse.json(result, { status: 200 })
-        }
-      }
-    } catch (pythonError: unknown) {
-      console.log('Python recommendation failed, falling back to JS:', pythonError instanceof Error ? pythonError.message : 'Unknown error')
-    }
-
-    // Fallback to JavaScript implementation
+    // Use JavaScript implementation for recommendations
     await initializeJsFallback()
     const recommendations = getJsRecommendations(title, 5)
     
