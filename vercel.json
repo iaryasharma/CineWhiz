@@ -1,0 +1,30 @@
+{
+  "functions": {
+    "app/api/recommend/route.ts": {
+      "maxDuration": 30
+    },
+    "app/api/tmdb/[id]/route.ts": {
+      "maxDuration": 30
+    },
+    "app/api/verify/route.ts": {
+      "maxDuration": 10
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/auth/:path*",
+      "destination": "/api/auth/:path*"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/data/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600"
+        }
+      ]
+    }
+  ]
+}
