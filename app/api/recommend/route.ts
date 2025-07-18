@@ -30,7 +30,9 @@ async function initializeJsFallback() {
     // Try to load from public folder first (for Vercel)
     let moviesData;
     try {
-      const publicResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/data/movies.json`);
+      // Use relative path for Vercel deployment
+      const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : (process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000');
+      const publicResponse = await fetch(`${baseUrl}/data/movies.json`);
       if (publicResponse.ok) {
         moviesData = await publicResponse.json();
       } else {

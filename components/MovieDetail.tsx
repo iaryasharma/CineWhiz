@@ -62,6 +62,12 @@ export default function MovieDetail({ movie, isOpen, onClose }: MovieDetailProps
         const response = await fetch(`/api/tmdb/${movie.id}`)
         
         if (!response.ok) {
+          if (response.status === 404) {
+            console.warn(`Movie with ID ${movie.id} not found in TMDB`);
+            // Don't set error, just use the basic movie data
+            setMovieDetails(null);
+            return;
+          }
           throw new Error(`API error: ${response.status}`)
         }
 
@@ -70,6 +76,7 @@ export default function MovieDetail({ movie, isOpen, onClose }: MovieDetailProps
         
       } catch (error) {
         console.error("Error fetching movie details:", error)
+        // Don't set movieDetails to null on error, just log it
         setMovieDetails(null)
       } finally {
         setIsLoading(false)
@@ -115,6 +122,7 @@ export default function MovieDetail({ movie, isOpen, onClose }: MovieDetailProps
       style={customStyles} 
       contentLabel={`Details for ${movie.title}`}
       closeTimeoutMS={300}
+      ariaHideApp={false}
     >
       <div className="text-white overflow-y-auto max-h-full">
         <button 
