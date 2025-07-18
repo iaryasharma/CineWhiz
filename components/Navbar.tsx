@@ -5,7 +5,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { signOut, useSession } from "next-auth/react"
-import { Bars3Icon, XMarkIcon, BookmarkIcon } from "@heroicons/react/24/outline"
+import { Bars3Icon, XMarkIcon, BookmarkIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline"
 import { useRouter } from "next/navigation"
 import SearchBar from "./SearchBar"
 
@@ -68,12 +68,24 @@ export default function Navbar() {
           </div>
 
           {/* Desktop right side */}
-          <div className="hidden md:flex items-center space-x-6">
-            <SearchBar 
-              isExpanded={isSearchOpen} 
-              onToggle={() => setIsSearchOpen(!isSearchOpen)} 
-              onClose={() => setIsSearchOpen(false)}
-            />
+          <div className="hidden md:flex items-center space-x-4">
+            <div className="relative">
+              {isSearchOpen ? (
+                <div className="w-80">
+                  <SearchBar 
+                    isExpanded={true} 
+                    onToggle={() => setIsSearchOpen(!isSearchOpen)} 
+                    onClose={() => setIsSearchOpen(false)}
+                  />
+                </div>
+              ) : (
+                <SearchBar 
+                  isExpanded={false} 
+                  onToggle={() => setIsSearchOpen(!isSearchOpen)} 
+                  onClose={() => setIsSearchOpen(false)}
+                />
+              )}
+            </div>
             
             {status === "loading" ? (
               <div className="w-6 h-6 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
@@ -109,28 +121,32 @@ export default function Navbar() {
             ) : (
               <button 
                 onClick={handleSignIn} 
-                className="bg-red-600 text-white px-5 py-2 rounded-md hover:bg-red-700 transition font-medium"
+                className="bg-red-600 text-white px-5 py-2 rounded-md hover:bg-red-700 transition font-medium whitespace-nowrap"
               >
                 Sign In
               </button>
             )}
           </div>
 
-          {/* Mobile menu button */}
-          <div className="md:hidden flex items-center space-x-4">
-            <SearchBar 
-              isExpanded={isSearchOpen} 
-              onToggle={() => setIsSearchOpen(!isSearchOpen)} 
-              onClose={() => setIsSearchOpen(false)}
-              className="absolute top-16 left-0 w-full px-4 pb-3 bg-black z-50"
-            />
+          {/* Mobile menu buttons */}
+          <div className="md:hidden flex items-center space-x-3">
+            {/* Search button - left side of hamburger */}
+            <button 
+              onClick={() => setIsSearchOpen(!isSearchOpen)}
+              className="text-gray-300 hover:text-white transition-colors"
+              aria-label="Search"
+            >
+              <MagnifyingGlassIcon className="h-6 w-6" />
+            </button>
             
+            {/* Watchlist button */}
             {status === "authenticated" && (
-              <button onClick={goToWatchlist} className="text-gray-300">
+              <button onClick={goToWatchlist} className="text-gray-300 hover:text-white">
                 <BookmarkIcon className="h-6 w-6" />
               </button>
             )}
             
+            {/* Hamburger menu button */}
             <button 
               onClick={() => setIsMenuOpen(!isMenuOpen)} 
               className="text-gray-300 hover:text-white"
@@ -144,6 +160,17 @@ export default function Navbar() {
             </button>
           </div>
         </div>
+
+        {/* Mobile search overlay */}
+        {isSearchOpen && (
+          <div className="md:hidden bg-black/95 border-t border-gray-800 px-4 py-3">
+            <SearchBar 
+              isExpanded={true} 
+              onToggle={() => setIsSearchOpen(!isSearchOpen)} 
+              onClose={() => setIsSearchOpen(false)}
+            />
+          </div>
+        )}
 
         {/* Mobile menu */}
         {isMenuOpen && (

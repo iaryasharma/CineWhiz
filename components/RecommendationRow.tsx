@@ -21,22 +21,10 @@ export default function RecommendationRow({ movieId, movieTitle, onMovieClick }:
   useEffect(() => {
     const fetchRecommendations = async () => {
       try {
-        // Check if API URL is defined
-        const apiUrl = process.env.NEXT_PUBLIC_FASTAPI_URL
-        if (!apiUrl) {
-          console.error("NEXT_PUBLIC_FASTAPI_URL is not defined")
-          setError("API URL not configured")
-          setLoading(false)
-          return
-        }
-
-        // Ensure URL doesn't have double slashes
-        const baseUrl = apiUrl.endsWith('/') ? apiUrl.slice(0, -1) : apiUrl
-
+        // Use internal API endpoint
         const response = await fetch(
-          `${baseUrl}/recommend?title=${encodeURIComponent(movieTitle)}`,
+          `/api/recommend?title=${encodeURIComponent(movieTitle)}`,
           {
-            mode: "cors",
             headers: {
               "Content-Type": "application/json",
             },

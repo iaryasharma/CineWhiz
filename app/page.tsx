@@ -40,9 +40,16 @@ export default function HomePage() {
         await fetchFeaturedPoster(featuredMovie)
 
         // Filter by genres
-        setActionMovies(movies.filter((movie) => movie.genres && movie.genres.includes("Action")).slice(0, 20))
-        setComedyMovies(movies.filter((movie) => movie.genres && movie.genres.includes("Comedy")).slice(0, 20))
-        setDramaMovies(movies.filter((movie) => movie.genres && movie.genres.includes("Drama")).slice(0, 20))
+        const hasGenre = (movie: Movie, genreName: string) => {
+          if (!movie.genres) return false
+          return movie.genres.some(genre => 
+            typeof genre === 'string' ? genre === genreName : genre.name === genreName
+          )
+        }
+        
+        setActionMovies(movies.filter((movie) => hasGenre(movie, "Action")).slice(0, 20))
+        setComedyMovies(movies.filter((movie) => hasGenre(movie, "Comedy")).slice(0, 20))
+        setDramaMovies(movies.filter((movie) => hasGenre(movie, "Drama")).slice(0, 20))
       } catch (error) {
         console.error("Error fetching movies:", error)
       } finally {
@@ -168,13 +175,13 @@ export default function HomePage() {
         </div>
 
         {/* Content with better padding */}
-        <div className="absolute bottom-0 left-0 w-full px-8 md:px-20 pb-24 md:pb-32 z-10">
+        <div className="absolute bottom-0 left-0 w-full px-4 sm:px-8 md:px-20 pb-16 sm:pb-24 md:pb-32 z-10 hero-content">
           {selectedMovie && (
             <div className="max-w-2xl">
-              <h1 className="text-5xl md:text-7xl font-bold mb-4 text-white">{selectedMovie.title}</h1>
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold mb-4 text-white">{selectedMovie.title}</h1>
 
               {selectedMovie.tagline && (
-                <p className="text-xl md:text-2xl text-gray-300 mb-6 italic">{selectedMovie.tagline}</p>
+                <p className="text-lg sm:text-xl md:text-2xl text-gray-300 mb-6 italic">{selectedMovie.tagline}</p>
               )}
 
               <div className="flex items-center gap-4 mb-4">
@@ -189,7 +196,7 @@ export default function HomePage() {
                 {selectedMovie.runtime && <span className="text-gray-300">{selectedMovie.runtime} min</span>}
               </div>
 
-              <p className="mb-8 text-lg text-gray-200 line-clamp-3">{selectedMovie.overview}</p>
+              <p className="mb-8 text-sm sm:text-base md:text-lg text-gray-200 line-clamp-3">{selectedMovie.overview}</p>
 
               <div className="flex flex-wrap gap-4">
                 {selectedMovie && <WatchlistButton movieId={selectedMovie.id} />}
@@ -207,7 +214,7 @@ export default function HomePage() {
       </div>
 
       {/* Movie Sliders with better padding and spacing */}
-      <div className="relative z-20 px-8 md:px-20 pb-16 -mt-32">
+      <div className="relative z-20 px-4 sm:px-8 md:px-20 pb-16 -mt-16 sm:-mt-24 md:-mt-32 movies-section">
         <MovieSlider title="Trending Now" movies={trendingMovies} onMovieClick={openMovieDetail} />
         {actionMovies.length > 0 && (
           <MovieSlider title="Action Thrillers" movies={actionMovies} onMovieClick={openMovieDetail} />

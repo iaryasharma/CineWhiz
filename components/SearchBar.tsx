@@ -37,7 +37,7 @@ export default function SearchBar({ isExpanded = false, onToggle, onClose, class
     return (
       <button 
         onClick={onToggle}
-        className={`text-gray-300 hover:text-white transition-colors ${className}`}
+        className={`text-gray-300 hover:text-white transition-colors p-1 ${className}`}
         aria-label="Search"
       >
         <MagnifyingGlassIcon className="h-6 w-6" />
@@ -46,7 +46,7 @@ export default function SearchBar({ isExpanded = false, onToggle, onClose, class
   }
 
   return (
-    <div className={`animate-fadeIn w-full ${className}`}>
+    <div className={`animate-fadeIn ${className}`}>
       <form onSubmit={handleSearch} className="relative">
         <input
           ref={searchInputRef}
@@ -54,7 +54,7 @@ export default function SearchBar({ isExpanded = false, onToggle, onClose, class
           placeholder="Search titles, actors, genres..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full rounded-md bg-gray-800/90 p-3 pl-4 pr-12 text-white focus:ring-2 focus:ring-red-500 focus:outline-none"
+          className="w-full rounded-md bg-gray-800/90 p-3 pl-4 pr-12 text-white focus:ring-2 focus:ring-red-500 focus:outline-none backdrop-blur-sm"
         />
         <div className="absolute right-3 top-1/2 -translate-y-1/2 flex space-x-2">
           {searchQuery && (

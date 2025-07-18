@@ -54,9 +54,10 @@ function SearchContent() {
       }
       
       // Search in genres
-      if (movie.genres && movie.genres.some(genre => 
-        genre.toLowerCase().includes(normalizedQuery)
-      )) {
+      if (movie.genres && movie.genres.some(genre => {
+        const genreName = typeof genre === 'string' ? genre : genre.name
+        return genreName.toLowerCase().includes(normalizedQuery)
+      })) {
         return true
       }
       

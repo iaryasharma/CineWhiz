@@ -66,7 +66,10 @@ export default function SearchResults() {
         const filteredMovies = allMovies.filter((movie) => 
           movie.title.toLowerCase().includes(query) || 
           (movie.overview && movie.overview.toLowerCase().includes(query)) ||
-          (movie.genres && movie.genres.some(genre => genre.toLowerCase().includes(query)))
+          (movie.genres && movie.genres.some(genre => {
+            const genreName = typeof genre === 'string' ? genre : genre.name
+            return genreName.toLowerCase().includes(query)
+          }))
         )
         
         setMovies(filteredMovies)

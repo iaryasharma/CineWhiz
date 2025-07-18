@@ -1,0 +1,1 @@
+merged_df = movies_df.merge(credits_df, left_on='id', right_on='movie_id')
