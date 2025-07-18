@@ -5,33 +5,58 @@ import { signIn } from "next-auth/react"
 export default function SignIn() {
   const [isLoading, setIsLoading] = useState(false)
   const [backgroundImage, setBackgroundImage] = useState("")
+  const [backgroundMoviePool, setBackgroundMoviePool] = useState<any[]>([])
+  const [currentBackgroundIndex, setCurrentBackgroundIndex] = useState(0)
   
   useEffect(() => {
     // Fetch random backdrop from TMDB
-    const fetchRandomBackdrop = async () => {
+    const fetchRandomBackdrops = async () => {
       try {
-        // You would need to replace this with your actual TMDB API key and endpoint
-        // This is a placeholder implementation
-        const response = await fetch(`https://api.themoviedb.org/3/movie/popular?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}`);
-        const data = await response.json();
+        // Fetch popular movies to create a pool of backgrounds
+        const response = await fetch(`/api/tmdb?category=popular&page=1`)
+        const data = await response.json()
         
         if (data.results && data.results.length > 0) {
-          // Get random movie from results
-          const randomIndex = Math.floor(Math.random() * data.results.length);
-          const randomMovie = data.results[randomIndex];
+          // Filter movies that have backdrop images
+          const moviesWithBackdrops = data.results.filter((movie: any) => movie.backdrop_path)
+          setBackgroundMoviePool(moviesWithBackdrops)
           
+          // Select a random movie from the pool on page load
+          const randomIndex = Math.floor(Math.random() * moviesWithBackdrops.length)
+          setCurrentBackgroundIndex(randomIndex)
+          
+          const randomMovie = moviesWithBackdrops[randomIndex]
           if (randomMovie.backdrop_path) {
-            setBackgroundImage(`https://image.tmdb.org/t/p/original${randomMovie.backdrop_path}`);
+            setBackgroundImage(`https://image.tmdb.org/t/p/original${randomMovie.backdrop_path}`)
           }
         }
       } catch (error) {
-        console.error("Error fetching backdrop:", error);
+        console.error("Error fetching backdrop:", error)
         // If there's an error, don't set a background image
       }
-    };
+    }
     
-    fetchRandomBackdrop();
-  }, []);
+    fetchRandomBackdrops()
+  }, [])
+
+  // Rotate background every 2 minutes
+  useEffect(() => {
+    if (backgroundMoviePool.length === 0) return
+
+    const rotateBackground = () => {
+      const nextIndex = (currentBackgroundIndex + 1) % backgroundMoviePool.length
+      setCurrentBackgroundIndex(nextIndex)
+      
+      const nextMovie = backgroundMoviePool[nextIndex]
+      if (nextMovie.backdrop_path) {
+        setBackgroundImage(`https://image.tmdb.org/t/p/original${nextMovie.backdrop_path}`)
+      }
+    }
+
+    const interval = setInterval(rotateBackground, 120000) // 2 minutes
+
+    return () => clearInterval(interval)
+  }, [backgroundMoviePool, currentBackgroundIndex])
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true)
@@ -46,7 +71,7 @@ export default function SignIn() {
 
   return (
     <div 
-      className={`min-h-screen ${backgroundImage ? "bg-cover bg-center bg-no-repeat" : "bg-black"}`}
+      className={`min-h-screen transition-all duration-1000 ease-in-out ${backgroundImage ? "bg-cover bg-center bg-no-repeat" : "bg-black"}`}
       style={backgroundImage ? {
         backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.7)), url(${backgroundImage})`,
       } : {}}

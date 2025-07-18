@@ -9,6 +9,11 @@ export async function GET(request: NextRequest) {
     const page = searchParams.get('page') || '1'
     const category = searchParams.get('category') || 'popular'
     const query = searchParams.get('query')
+    const timeWindow = searchParams.get('time_window') || 'day'
+    const region = searchParams.get('region')
+    const withGenres = searchParams.get('with_genres')
+    const withOriginCountry = searchParams.get('with_origin_country')
+    const sortBy = searchParams.get('sort_by')
 
     if (!TMDB_API_KEY) {
       return NextResponse.json(
@@ -36,6 +41,27 @@ export async function GET(request: NextRequest) {
           break
         case 'now_playing':
           url = `${TMDB_BASE_URL}/movie/now_playing?api_key=${TMDB_API_KEY}&page=${page}`
+          break
+        case 'trending':
+          url = `${TMDB_BASE_URL}/trending/movie/${timeWindow}?api_key=${TMDB_API_KEY}&page=${page}`
+          if (region) {
+            url += `&region=${region}`
+          }
+          break
+        case 'discover':
+          url = `${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&page=${page}`
+          if (withGenres) {
+            url += `&with_genres=${withGenres}`
+          }
+          if (region) {
+            url += `&region=${region}`
+          }
+          if (withOriginCountry) {
+            url += `&with_origin_country=${withOriginCountry}`
+          }
+          if (sortBy) {
+            url += `&sort_by=${sortBy}`
+          }
           break
         default:
           url = `${TMDB_BASE_URL}/movie/popular?api_key=${TMDB_API_KEY}&page=${page}`

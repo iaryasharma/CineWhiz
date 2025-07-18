@@ -20,16 +20,17 @@ function SearchContent() {
     const fetchMovies = async () => {
       try {
         setLoading(true)
-        const response = await fetch("/data/movies.json")
-        const fetchedMovies: Movie[] = await response.json()
         
         if (query) {
-          performSearch(fetchedMovies, query)
+          // Search movies using TMDB API
+          const response = await fetch(`/api/tmdb?query=${encodeURIComponent(query)}`)
+          const data = await response.json()
+          setSearchResults(data.results || [])
         } else {
           setSearchResults([])
         }
       } catch (error) {
-        console.error("Error fetching movies:", error)
+        console.error("Error searching movies:", error)
         setSearchResults([])
       } finally {
         setLoading(false)
@@ -38,48 +39,6 @@ function SearchContent() {
 
     fetchMovies()
   }, [query])
-
-  const performSearch = (moviesList: Movie[], searchQuery: string) => {
-    const normalizedQuery = searchQuery.toLowerCase().trim()
-    
-    const results = moviesList.filter(movie => {
-      // Search in title
-      if (movie.title.toLowerCase().includes(normalizedQuery)) {
-        return true
-      }
-      
-      // Search in overview
-      if (movie.overview && movie.overview.toLowerCase().includes(normalizedQuery)) {
-        return true
-      }
-      
-      // Search in genres
-      if (movie.genres && movie.genres.some(genre => {
-        const genreName = typeof genre === 'string' ? genre : genre.name
-        return genreName.toLowerCase().includes(normalizedQuery)
-      })) {
-        return true
-      }
-      
-      // Search in cast
-      if (movie.cast && movie.cast.some(actor => 
-        actor.toLowerCase().includes(normalizedQuery)
-      )) {
-        return true
-      }
-      
-      // Search in crew
-      if (movie.crew && movie.crew.some(member => 
-        member.toLowerCase().includes(normalizedQuery)
-      )) {
-        return true
-      }
-      
-      return false
-    })
-    
-    setSearchResults(results)
-  }
 
   const openMovieDetail = (movie: Movie) => {
     setSelectedMovie(movie)

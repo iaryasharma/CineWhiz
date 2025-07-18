@@ -49,113 +49,50 @@ const customStyles = {
 }
 
 export default function MovieDetail({ movie, isOpen, onClose }: MovieDetailProps) {
-  const [backdropUrl, setBackdropUrl] = useState<string | null>(null)
-  const [trailerUrl, setTrailerUrl] = useState<string | null>(null)
+  const [movieDetails, setMovieDetails] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const fetchMovieMedia = async () => {
+    const fetchMovieDetails = async () => {
       if (!isOpen) return;
       
       setIsLoading(true);
       try {
-        const apiKey = process.env.NEXT_PUBLIC_TMDB_API_KEY;
-        if (!apiKey) {
-          console.error("TMDB API key is not defined");
-          setIsLoading(false);
-          return;
-        }
+        // Fetch full movie details including cast, crew, etc.
+        const response = await fetch(`/api/tmdb/${movie.id}`)
         
-        // First try to get by ID
-        const response = await fetch(
-          `https://api.themoviedb.org/3/movie/${movie.id}?api_key=${apiKey}`,
-        )
-
         if (!response.ok) {
-          throw new Error(`TMDB API error: ${response.status}`)
+          throw new Error(`API error: ${response.status}`)
         }
 
         const data = await response.json()
+        setMovieDetails(data)
         
-        if (data.backdrop_path) {
-          setBackdropUrl(`https://image.tmdb.org/t/p/original${data.backdrop_path}`)
-        }
-        
-        // Fetch movie trailer
-        const videosResponse = await fetch(
-          `https://api.themoviedb.org/3/movie/${movie.id}/videos?api_key=${apiKey}`
-        )
-        
-        if (videosResponse.ok) {
-          const videosData = await videosResponse.json()
-          const trailer = videosData.results?.find(
-            (video: VideoResult) => 
-              (video.type === 'Trailer' || video.type === 'Teaser') && 
-              video.site === 'YouTube'
-          )
-          
-          if (trailer) {
-            setTrailerUrl(`https://www.youtube.com/watch?v=${trailer.key}`)
-          }
-        }
-        
-        // If no data found by ID, try search
-        if (!data.backdrop_path) {
-          const searchResponse = await fetch(
-            `https://api.themoviedb.org/3/search/movie?api_key=${apiKey}&query=${encodeURIComponent(movie.title)}`,
-          )
-
-          if (!searchResponse.ok) {
-            throw new Error(`TMDB search API error: ${searchResponse.status}`)
-          }
-
-          const searchData = await searchResponse.json()
-
-          if (searchData.results && searchData.results.length > 0) {
-            const foundMovie = searchData.results[0]
-            
-            if (foundMovie.backdrop_path) {
-              setBackdropUrl(`https://image.tmdb.org/t/p/original${foundMovie.backdrop_path}`)
-            }
-            
-            // Try to get trailer for the found movie
-            if (!trailerUrl && foundMovie.id) {
-              const foundVideosResponse = await fetch(
-                `https://api.themoviedb.org/3/movie/${foundMovie.id}/videos?api_key=${apiKey}`
-              )
-              
-              if (foundVideosResponse.ok) {
-                const foundVideosData = await foundVideosResponse.json()
-                const foundTrailer = foundVideosData.results?.find(
-                  (video: VideoResult) => 
-                    (video.type === 'Trailer' || video.type === 'Teaser') && 
-                    video.site === 'YouTube'
-                )
-                
-                if (foundTrailer) {
-                  setTrailerUrl(`https://www.youtube.com/watch?v=${foundTrailer.key}`)
-                }
-              }
-            }
-          }
-        }
       } catch (error) {
-        console.error("Error fetching movie media:", error)
-        setBackdropUrl(null)
-        setTrailerUrl(null)
+        console.error("Error fetching movie details:", error)
+        setMovieDetails(null)
       } finally {
         setIsLoading(false)
       }
     }
 
-    fetchMovieMedia()
-  }, [movie.id, movie.title, isOpen, trailerUrl])
+    fetchMovieDetails()
+  }, [movie.id, isOpen])
 
   const handleTrailerClick = () => {
-    if (trailerUrl) {
-      window.open(trailerUrl, '_blank', 'noopener,noreferrer');
+    if (movieDetails?.videos?.results?.length > 0) {
+      const trailer = movieDetails.videos.results[0]
+      if (trailer.site === 'YouTube') {
+        window.open(`https://www.youtube.com/watch?v=${trailer.key}`, '_blank', 'noopener,noreferrer')
+      }
     }
   }
+
+  const displayMovie = movieDetails || movie
+  const backdropUrl = displayMovie.backdrop_path 
+    ? `https://image.tmdb.org/t/p/original${displayMovie.backdrop_path}`
+    : null
+  const hasTrailer = movieDetails?.videos?.results?.length > 0
 
   return (
     <Modal 
@@ -201,24 +138,24 @@ export default function MovieDetail({ movie, isOpen, onClose }: MovieDetailProps
           
           {/* Content overlay on backdrop */}
           <div className="absolute bottom-0 left-0 p-6 md:p-12 w-full">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">{movie.title}</h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">{displayMovie.title}</h2>
             
             <div className="flex flex-wrap gap-4 mb-4">
               <button 
-                className={`flex items-center justify-center gap-2 bg-white text-black px-6 py-2 rounded hover:bg-opacity-80 transition ${!trailerUrl ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`flex items-center justify-center gap-2 bg-white text-black px-6 py-2 rounded hover:bg-opacity-80 transition ${!hasTrailer ? 'opacity-50 cursor-not-allowed' : ''}`}
                 onClick={handleTrailerClick}
-                disabled={!trailerUrl}
+                disabled={!hasTrailer}
               >
                 <PlayIcon className="h-5 w-5" />
                 Trailer
               </button>
               
-              <WatchlistButton movieId={movie.id} />
+              <WatchlistButton movieId={displayMovie.id} />
 
-              {movie.vote_average !== undefined && (
+              {displayMovie.vote_average !== undefined && (
                 <div className="flex items-center bg-gray-800 bg-opacity-60 px-3 py-2 rounded-md border border-gray-700">
                   <StarIcon className="h-5 w-5 text-yellow-500 mr-1" />
-                  <span className="text-white font-medium">{movie.vote_average.toFixed(1)}/10</span>
+                  <span className="text-white font-medium">{displayMovie.vote_average.toFixed(1)}/10</span>
                 </div>
               )}
             </div>
@@ -229,57 +166,57 @@ export default function MovieDetail({ movie, isOpen, onClose }: MovieDetailProps
           <div className="flex flex-col md:flex-row md:gap-8">
             <div className="w-full md:w-2/3">
               <div className="flex items-center gap-4 mb-4">
-                {movie.vote_average !== undefined && (
+                {displayMovie.vote_average !== undefined && (
                   <div className="flex items-center">
                     <StarIcon className="h-5 w-5 text-yellow-500 mr-1" />
-                    <span className="text-white font-medium">{movie.vote_average.toFixed(1)}/10</span>
+                    <span className="text-white font-medium">{displayMovie.vote_average.toFixed(1)}/10</span>
                   </div>
                 )}
                 
-                <span className="text-gray-400">{movie.release_date && formatDate(movie.release_date)}</span>
+                <span className="text-gray-400">{displayMovie.release_date && formatDate(displayMovie.release_date)}</span>
                 
-                {movie.runtime && (
-                  <span className="text-gray-400">{Math.floor(movie.runtime / 60)}h {movie.runtime % 60}m</span>
+                {displayMovie.runtime && (
+                  <span className="text-gray-400">{Math.floor(displayMovie.runtime / 60)}h {displayMovie.runtime % 60}m</span>
                 )}
               </div>
               
-              <p className="text-lg mb-6">{movie.overview}</p>
+              <p className="text-lg mb-6">{displayMovie.overview}</p>
             </div>
             
             <div className="w-full md:w-1/3 text-sm">
-              {movie.cast && movie.cast.length > 0 && (
+              {movieDetails?.credits?.cast && movieDetails.credits.cast.length > 0 && (
                 <div className="mb-4">
                   <span className="text-gray-400">Cast: </span>
-                  <span>{movie.cast.slice(0, 5).join(", ")}{movie.cast.length > 5 ? ", more..." : ""}</span>
+                  <span>{movieDetails.credits.cast.slice(0, 5).map((person: any) => person.name).join(", ")}</span>
                 </div>
               )}
               
-              {movie.crew && movie.crew.length > 0 && (
+              {movieDetails?.credits?.crew && movieDetails.credits.crew.length > 0 && (
                 <div className="mb-4">
                   <span className="text-gray-400">Director: </span>
-                  <span>{movie.crew.join(", ")}</span>
+                  <span>{movieDetails.credits.crew.map((person: any) => person.name).join(", ")}</span>
                 </div>
               )}
               
-              {movie.genres && movie.genres.length > 0 && (
+              {displayMovie.genres && displayMovie.genres.length > 0 && (
                 <div className="mb-4">
                   <span className="text-gray-400">Genres: </span>
-                  <span>{movie.genres.join(", ")}</span>
+                  <span>{displayMovie.genres.map((genre: any) => genre.name).join(", ")}</span>
                 </div>
               )}
               
-              {movie.original_language && (
+              {displayMovie.original_language && (
                 <div>
                   <span className="text-gray-400">Language: </span>
-                  <span>{movie.original_language.toUpperCase()}</span>
+                  <span>{displayMovie.original_language.toUpperCase()}</span>
                 </div>
               )}
             </div>  
           </div>
           
           {/* Recommendations Section */}
-          {movie.id && movie.title && (
-            <RecommendationRow movieId={movie.id} movieTitle={movie.title} onMovieClick={onClose} />
+          {displayMovie.id && displayMovie.title && (
+            <RecommendationRow movieId={displayMovie.id} movieTitle={displayMovie.title} onMovieClick={onClose} />
           )}
         </div>
       </div>

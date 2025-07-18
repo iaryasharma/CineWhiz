@@ -34,7 +34,7 @@ export default function WatchlistPage() {
         
         const watchlistData = await watchlistResponse.json()
         
-        // Fetch all movies for recommendations
+        // Fetch all movies for recommendations (still using local data for recommendations)
         const moviesResponse = await fetch("/data/movies.json")
         
         if (!moviesResponse.ok) {
@@ -48,8 +48,27 @@ export default function WatchlistPage() {
         // Match watchlist items with movie data
         if (watchlistData.watchlist?.length > 0) {
           const movieIds = watchlistData.watchlist.map((item: WatchlistItem) => parseInt(String(item.movieId)))
-          const moviesInWatchlist = allMoviesData.filter(movie => movieIds.includes(movie.id))
-          setWatchlistMovies(moviesInWatchlist)
+          
+          // First try to get movies from local data
+          const localMovies = allMoviesData.filter(movie => movieIds.includes(movie.id))
+          
+          // For any missing movies, fetch from TMDB
+          const missingIds = movieIds.filter((id: number) => !localMovies.some(movie => movie.id === id))
+          const tmdbMovies = []
+          
+          for (const id of missingIds) {
+            try {
+              const tmdbResponse = await fetch(`/api/tmdb/${id}`)
+              if (tmdbResponse.ok) {
+                const tmdbMovie = await tmdbResponse.json()
+                tmdbMovies.push(tmdbMovie)
+              }
+            } catch (error) {
+              console.error(`Error fetching TMDB movie ${id}:`, error)
+            }
+          }
+          
+          setWatchlistMovies([...localMovies, ...tmdbMovies])
         }
       } catch (error) {
         console.error("Error fetching data:", error)

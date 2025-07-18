@@ -11,6 +11,7 @@ import WatchlistButton from "@/components/WatchlistButton"
 export default function HomePage() {
   const [allMovies, setAllMovies] = useState<Movie[]>([])
   const [trendingMovies, setTrendingMovies] = useState<Movie[]>([])
+  const [trendingInIndiaMovies, setTrendingInIndiaMovies] = useState<Movie[]>([])
   const [actionMovies, setActionMovies] = useState<Movie[]>([])
   const [comedyMovies, setComedyMovies] = useState<Movie[]>([])
   const [dramaMovies, setDramaMovies] = useState<Movie[]>([])
@@ -18,38 +19,81 @@ export default function HomePage() {
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [featuredPosterUrl, setFeaturedPosterUrl] = useState<string | null>(null)
+  const [featuredMoviePool, setFeaturedMoviePool] = useState<Movie[]>([])
+  const [currentFeaturedIndex, setCurrentFeaturedIndex] = useState(0)
 
   useEffect(() => {
     const fetchMovies = async () => {
       try {
-        const response = await fetch("/data/movies.json")
-        const movies: Movie[] = await response.json()
-
-        setAllMovies(movies)
-
-        // Create trending (random selection)
-        const shuffled = [...movies].sort(() => 0.5 - Math.random())
-        const trendingSelection = shuffled.slice(0, 20)
-        setTrendingMovies(trendingSelection)
-
-        // Set a featured movie
-        const featuredMovie = trendingSelection[0]
-        setSelectedMovie(featuredMovie)
-
-        // Fetch the poster for the featured movie
-        await fetchFeaturedPoster(featuredMovie)
-
-        // Filter by genres
-        const hasGenre = (movie: Movie, genreName: string) => {
-          if (!movie.genres) return false
-          return movie.genres.some(genre => 
-            typeof genre === 'string' ? genre === genreName : genre.name === genreName
-          )
+        setLoading(true)
+        
+        // Fetch trending movies from TMDB
+        const trendingResponse = await fetch('/api/tmdb?category=trending&time_window=day')
+        const trendingData = await trendingResponse.json()
+        setTrendingMovies(trendingData.results || [])
+        
+        // Fetch trending in India (use discover with Indian origin country)
+        const indiaResponse = await fetch('/api/tmdb?category=discover&with_origin_country=IN&sort_by=popularity.desc')
+        const indiaData = await indiaResponse.json()
+        setTrendingInIndiaMovies(indiaData.results || [])
+        
+        // Fetch popular movies for general pool
+        const popularResponse = await fetch('/api/tmdb?category=popular&page=1')
+        const popularData = await popularResponse.json()
+        setAllMovies(popularData.results || [])
+        
+        // Fetch genres to get IDs
+        const genresResponse = await fetch('/api/genres')
+        const genresData = await genresResponse.json()
+        const genres = genresData.genres || []
+        
+        // Find specific genre IDs
+        const actionGenre = genres.find((g: any) => g.name === 'Action')
+        const comedyGenre = genres.find((g: any) => g.name === 'Comedy')
+        const dramaGenre = genres.find((g: any) => g.name === 'Drama')
+        
+        // Fetch action movies
+        if (actionGenre) {
+          const actionResponse = await fetch(`/api/tmdb?category=discover&with_genres=${actionGenre.id}`)
+          const actionData = await actionResponse.json()
+          setActionMovies(actionData.results || [])
         }
         
-        setActionMovies(movies.filter((movie) => hasGenre(movie, "Action")).slice(0, 20))
-        setComedyMovies(movies.filter((movie) => hasGenre(movie, "Comedy")).slice(0, 20))
-        setDramaMovies(movies.filter((movie) => hasGenre(movie, "Drama")).slice(0, 20))
+        // Fetch comedy movies
+        if (comedyGenre) {
+          const comedyResponse = await fetch(`/api/tmdb?category=discover&with_genres=${comedyGenre.id}`)
+          const comedyData = await comedyResponse.json()
+          setComedyMovies(comedyData.results || [])
+        }
+        
+        // Fetch drama movies
+        if (dramaGenre) {
+          const dramaResponse = await fetch(`/api/tmdb?category=discover&with_genres=${dramaGenre.id}`)
+          const dramaData = await dramaResponse.json()
+          setDramaMovies(dramaData.results || [])
+        }
+
+        // Set featured movie from trending
+        if (trendingData.results && trendingData.results.length > 0) {
+          // Create a pool of featured movies from top trending
+          const featuredPool = trendingData.results.slice(0, 10)
+          setFeaturedMoviePool(featuredPool)
+          
+          // Select a random movie from the pool on page load
+          const randomIndex = Math.floor(Math.random() * featuredPool.length)
+          setCurrentFeaturedIndex(randomIndex)
+          
+          const featuredMovie = featuredPool[randomIndex]
+          setSelectedMovie(featuredMovie)
+          
+          // Set featured poster/backdrop
+          if (featuredMovie.backdrop_path) {
+            setFeaturedPosterUrl(`https://image.tmdb.org/t/p/original${featuredMovie.backdrop_path}`)
+          } else if (featuredMovie.poster_path) {
+            setFeaturedPosterUrl(`https://image.tmdb.org/t/p/w500${featuredMovie.poster_path}`)
+          }
+        }
+        
       } catch (error) {
         console.error("Error fetching movies:", error)
       } finally {
@@ -60,43 +104,29 @@ export default function HomePage() {
     fetchMovies()
   }, [])
 
-  const fetchFeaturedPoster = async (movie: Movie) => {
-    try {
-      const response = await fetch(
-        `https://api.themoviedb.org/3/movie/${movie.id}?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}`,
-      )
+  // Rotate featured movie every 2 minutes
+  useEffect(() => {
+    if (featuredMoviePool.length === 0) return
 
-      if (!response.ok) {
-        throw new Error(`TMDB API error: ${response.status}`)
+    const rotateMovie = () => {
+      const nextIndex = (currentFeaturedIndex + 1) % featuredMoviePool.length
+      setCurrentFeaturedIndex(nextIndex)
+      
+      const nextMovie = featuredMoviePool[nextIndex]
+      setSelectedMovie(nextMovie)
+      
+      // Update poster/backdrop
+      if (nextMovie.backdrop_path) {
+        setFeaturedPosterUrl(`https://image.tmdb.org/t/p/original${nextMovie.backdrop_path}`)
+      } else if (nextMovie.poster_path) {
+        setFeaturedPosterUrl(`https://image.tmdb.org/t/p/w500${nextMovie.poster_path}`)
       }
-
-      const data = await response.json()
-
-      if (data.backdrop_path) {
-        setFeaturedPosterUrl(`https://image.tmdb.org/t/p/original${data.backdrop_path}`)
-      } else {
-        // Try search as fallback if direct ID lookup fails
-        const searchResponse = await fetch(
-          `https://api.themoviedb.org/3/search/movie?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&query=${encodeURIComponent(movie.title)}`,
-        )
-
-        if (!searchResponse.ok) {
-          throw new Error(`TMDB search API error: ${searchResponse.status}`)
-        }
-
-        const searchData = await searchResponse.json()
-
-        if (searchData.results && searchData.results.length > 0 && searchData.results[0].backdrop_path) {
-          setFeaturedPosterUrl(`https://image.tmdb.org/t/p/original${searchData.results[0].backdrop_path}`)
-        } else {
-          setFeaturedPosterUrl(null)
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching featured poster:", error)
-      setFeaturedPosterUrl(null)
     }
-  }
+
+    const interval = setInterval(rotateMovie, 120000) // 2 minutes
+
+    return () => clearInterval(interval)
+  }, [featuredMoviePool, currentFeaturedIndex])
 
   useEffect(() => {
     // Handle URL changes for movie detail modal
@@ -156,7 +186,7 @@ export default function HomePage() {
       {/* Hero Banner with Featured Movie - full height and width */}
       <div className="relative h-screen w-full overflow-hidden">
         {/* Background Image */}
-        <div className="absolute inset-0">
+        <div className="absolute inset-0 transition-all duration-1000 ease-in-out">
           {featuredPosterUrl ? (
             <Image
               src={featuredPosterUrl || "/placeholder.svg"}
@@ -164,7 +194,7 @@ export default function HomePage() {
               fill
               priority
               sizes="100vw"
-              className="object-cover"
+              className="object-cover transition-opacity duration-1000 ease-in-out"
             />
           ) : (
             <div className="w-full h-full bg-gray-900" />
@@ -177,11 +207,15 @@ export default function HomePage() {
         {/* Content with better padding */}
         <div className="absolute bottom-0 left-0 w-full px-4 sm:px-8 md:px-20 pb-16 sm:pb-24 md:pb-32 z-10 hero-content">
           {selectedMovie && (
-            <div className="max-w-2xl">
-              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold mb-4 text-white">{selectedMovie.title}</h1>
+            <div className="max-w-2xl animate-fadeIn">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold mb-4 text-white transition-all duration-500">
+                {selectedMovie.title}
+              </h1>
 
               {selectedMovie.tagline && (
-                <p className="text-lg sm:text-xl md:text-2xl text-gray-300 mb-6 italic">{selectedMovie.tagline}</p>
+                <p className="text-lg sm:text-xl md:text-2xl text-gray-300 mb-6 italic transition-all duration-500">
+                  {selectedMovie.tagline}
+                </p>
               )}
 
               <div className="flex items-center gap-4 mb-4">
@@ -216,6 +250,9 @@ export default function HomePage() {
       {/* Movie Sliders with better padding and spacing */}
       <div className="relative z-20 px-4 sm:px-8 md:px-20 pb-16 -mt-16 sm:-mt-24 md:-mt-32 movies-section">
         <MovieSlider title="Trending Now" movies={trendingMovies} onMovieClick={openMovieDetail} />
+        {trendingInIndiaMovies.length > 0 && (
+          <MovieSlider title="Trending in India" movies={trendingInIndiaMovies} onMovieClick={openMovieDetail} />
+        )}
         {actionMovies.length > 0 && (
           <MovieSlider title="Action Thrillers" movies={actionMovies} onMovieClick={openMovieDetail} />
         )}
