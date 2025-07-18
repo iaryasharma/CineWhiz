@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
     const data = await response.json()
     
     // Transform the data to match our movie interface
-    const transformedResults = data.results.map((movie: any) => ({
+    const transformedResults = data.results.map((movie: Record<string, unknown>) => ({
       id: movie.id,
       title: movie.title,
       overview: movie.overview,

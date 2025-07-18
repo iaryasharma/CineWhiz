@@ -52,7 +52,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       video: movieData.video,
       credits: {
         cast: movieData.credits?.cast?.slice(0, 10) || [],
-        crew: movieData.credits?.crew?.filter((person: any) => person.job === 'Director') || []
+        crew: movieData.credits?.crew?.filter((person: Record<string, unknown>) => person.job === 'Director') || []
       },
       videos: {
         results: movieData.videos?.results?.slice(0, 3) || []

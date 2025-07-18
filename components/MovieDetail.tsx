@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Image from "next/image"
-import type { Movie } from "@/types"
+import type { Movie, CastMember, CrewMember, Genre } from "@/types"
 import { formatDate } from "@/lib/utils"
 import WatchlistButton from "./WatchlistButton"
 import RecommendationRow from "./RecommendationRow"
@@ -18,12 +18,6 @@ interface MovieDetailProps {
   movie: Movie
   isOpen: boolean
   onClose: () => void
-}
-
-interface VideoResult {
-  type: string;
-  site: string;
-  key: string;
 }
 
 const customStyles = {
@@ -49,7 +43,7 @@ const customStyles = {
 }
 
 export default function MovieDetail({ movie, isOpen, onClose }: MovieDetailProps) {
-  const [movieDetails, setMovieDetails] = useState<any>(null)
+  const [movieDetails, setMovieDetails] = useState<Movie | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -80,7 +74,7 @@ export default function MovieDetail({ movie, isOpen, onClose }: MovieDetailProps
   }, [movie.id, isOpen])
 
   const handleTrailerClick = () => {
-    if (movieDetails?.videos?.results?.length > 0) {
+    if (movieDetails?.videos?.results && movieDetails.videos.results.length > 0) {
       const trailer = movieDetails.videos.results[0]
       if (trailer.site === 'YouTube') {
         window.open(`https://www.youtube.com/watch?v=${trailer.key}`, '_blank', 'noopener,noreferrer')
@@ -92,7 +86,7 @@ export default function MovieDetail({ movie, isOpen, onClose }: MovieDetailProps
   const backdropUrl = displayMovie.backdrop_path 
     ? `https://image.tmdb.org/t/p/original${displayMovie.backdrop_path}`
     : null
-  const hasTrailer = movieDetails?.videos?.results?.length > 0
+  const hasTrailer = movieDetails?.videos?.results && movieDetails.videos.results.length > 0
 
   return (
     <Modal 
@@ -187,21 +181,23 @@ export default function MovieDetail({ movie, isOpen, onClose }: MovieDetailProps
               {movieDetails?.credits?.cast && movieDetails.credits.cast.length > 0 && (
                 <div className="mb-4">
                   <span className="text-gray-400">Cast: </span>
-                  <span>{movieDetails.credits.cast.slice(0, 5).map((person: any) => person.name).join(", ")}</span>
+                  <span>{movieDetails.credits.cast.slice(0, 5).map((person: CastMember) => person.name).join(", ")}</span>
                 </div>
               )}
               
               {movieDetails?.credits?.crew && movieDetails.credits.crew.length > 0 && (
                 <div className="mb-4">
                   <span className="text-gray-400">Director: </span>
-                  <span>{movieDetails.credits.crew.map((person: any) => person.name).join(", ")}</span>
+                  <span>{movieDetails.credits.crew.map((person: CrewMember) => person.name).join(", ")}</span>
                 </div>
               )}
               
               {displayMovie.genres && displayMovie.genres.length > 0 && (
                 <div className="mb-4">
                   <span className="text-gray-400">Genres: </span>
-                  <span>{displayMovie.genres.map((genre: any) => genre.name).join(", ")}</span>
+                  <span>{displayMovie.genres.map((genre: string | Genre) => 
+                    typeof genre === 'string' ? genre : genre.name
+                  ).join(", ")}</span>
                 </div>
               )}
               

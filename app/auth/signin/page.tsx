@@ -5,7 +5,7 @@ import { signIn } from "next-auth/react"
 export default function SignIn() {
   const [isLoading, setIsLoading] = useState(false)
   const [backgroundImage, setBackgroundImage] = useState("")
-  const [backgroundMoviePool, setBackgroundMoviePool] = useState<any[]>([])
+  const [backgroundMoviePool, setBackgroundMoviePool] = useState<Record<string, unknown>[]>([])
   const [currentBackgroundIndex, setCurrentBackgroundIndex] = useState(0)
   
   useEffect(() => {
@@ -18,7 +18,7 @@ export default function SignIn() {
         
         if (data.results && data.results.length > 0) {
           // Filter movies that have backdrop images
-          const moviesWithBackdrops = data.results.filter((movie: any) => movie.backdrop_path)
+          const moviesWithBackdrops = data.results.filter((movie: Record<string, unknown>) => movie.backdrop_path)
           setBackgroundMoviePool(moviesWithBackdrops)
           
           // Select a random movie from the pool on page load
@@ -27,7 +27,7 @@ export default function SignIn() {
           
           const randomMovie = moviesWithBackdrops[randomIndex]
           if (randomMovie.backdrop_path) {
-            setBackgroundImage(`https://image.tmdb.org/t/p/original${randomMovie.backdrop_path}`)
+            setBackgroundImage(`https://image.tmdb.org/t/p/original${randomMovie.backdrop_path as string}`)
           }
         }
       } catch (error) {

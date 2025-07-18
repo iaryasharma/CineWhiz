@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 
 const TMDB_API_KEY = process.env.NEXT_PUBLIC_TMDB_API_KEY
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3'
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     if (!TMDB_API_KEY) {
       return NextResponse.json(

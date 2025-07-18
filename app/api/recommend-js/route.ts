@@ -2,17 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import fs from 'fs'
 import path from 'path'
 
-interface Movie {
-  id: number
-  title: string
-  overview: string
-  genres: string[]
-  keywords: string[]
-  cast: string[]
-  director: string[]
-  tags: string[]
-}
-
 interface ProcessedMovie {
   id: number
   title: string
@@ -23,37 +12,6 @@ interface ProcessedMovie {
 
 let processedMovies: ProcessedMovie[] = []
 let isInitialized = false
-
-// Simple text processing functions
-function extractNames(text: string): string[] {
-  try {
-    const parsed = JSON.parse(text)
-    return parsed.map((item: any) => item.name || '').filter(Boolean)
-  } catch {
-    return []
-  }
-}
-
-function extractTopCast(text: string): string[] {
-  try {
-    const parsed = JSON.parse(text)
-    return parsed.slice(0, 3).map((item: any) => item.name || '').filter(Boolean)
-  } catch {
-    return []
-  }
-}
-
-function extractDirector(text: string): string[] {
-  try {
-    const parsed = JSON.parse(text)
-    return parsed
-      .filter((person: any) => person.job === 'Director')
-      .map((person: any) => person.name || '')
-      .filter(Boolean)
-  } catch {
-    return []
-  }
-}
 
 // Simple cosine similarity calculation
 function calculateSimilarity(tags1: string[], tags2: string[]): number {
@@ -86,16 +44,16 @@ async function initializeSystem() {
     if (fs.existsSync(moviesJsonPath)) {
       const moviesData = JSON.parse(fs.readFileSync(moviesJsonPath, 'utf-8'))
       
-      processedMovies = moviesData.map((movie: any) => ({
-        id: movie.id,
-        title: movie.title,
-        titleLower: movie.title.toLowerCase(),
+      processedMovies = moviesData.map((movie: Record<string, unknown>) => ({
+        id: movie.id as number,
+        title: movie.title as string,
+        titleLower: (movie.title as string).toLowerCase(),
         tags: [
-          ...(movie.overview ? movie.overview.split(' ') : []),
-          ...(movie.genres || []),
-          ...(movie.cast || []),
-          ...(movie.director || []),
-          ...(movie.keywords || [])
+          ...((movie.overview as string)?.split(' ') || []),
+          ...((movie.genres as string[]) || []),
+          ...((movie.cast as string[]) || []),
+          ...((movie.director as string[]) || []),
+          ...((movie.keywords as string[]) || [])
         ].map(tag => tag.toLowerCase()).filter(Boolean)
       }))
       

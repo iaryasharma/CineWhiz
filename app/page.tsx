@@ -48,9 +48,9 @@ export default function HomePage() {
         const genres = genresData.genres || []
         
         // Find specific genre IDs
-        const actionGenre = genres.find((g: any) => g.name === 'Action')
-        const comedyGenre = genres.find((g: any) => g.name === 'Comedy')
-        const dramaGenre = genres.find((g: any) => g.name === 'Drama')
+        const actionGenre = genres.find((g: Record<string, unknown>) => g.name === 'Action')
+        const comedyGenre = genres.find((g: Record<string, unknown>) => g.name === 'Comedy')
+        const dramaGenre = genres.find((g: Record<string, unknown>) => g.name === 'Drama')
         
         // Fetch action movies
         if (actionGenre) {

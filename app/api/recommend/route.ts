@@ -33,16 +33,16 @@ async function initializeJsFallback() {
     if (fs.existsSync(moviesJsonPath)) {
       const moviesData = JSON.parse(fs.readFileSync(moviesJsonPath, 'utf-8'))
       
-      processedMovies = moviesData.map((movie: any) => ({
-        id: movie.id,
-        title: movie.title,
-        titleLower: movie.title.toLowerCase(),
+      processedMovies = moviesData.map((movie: Record<string, unknown>) => ({
+        id: movie.id as number,
+        title: movie.title as string,
+        titleLower: (movie.title as string).toLowerCase(),
         tags: [
-          ...(movie.overview ? movie.overview.split(' ') : []),
-          ...(movie.genres || []),
-          ...(movie.cast || []),
-          ...(movie.director || []),
-          ...(movie.keywords || [])
+          ...((movie.overview as string)?.split(' ') || []),
+          ...((movie.genres as string[]) || []),
+          ...((movie.cast as string[]) || []),
+          ...((movie.director as string[]) || []),
+          ...((movie.keywords as string[]) || [])
         ].map(tag => tag.toLowerCase()).filter(Boolean)
       }))
       
@@ -94,7 +94,7 @@ export async function GET(request: NextRequest) {
       if (fs.existsSync(pythonScript)) {
         const pythonExecutable = process.platform === 'win32' ? 'C:/Users/as706/AppData/Local/Programs/Python/Python38/python.exe' : 'python3'
         
-        const result = await new Promise<any>((resolve, reject) => {
+        const result = await new Promise<Record<string, unknown>>((resolve, reject) => {
           const pythonProcess = spawn(pythonExecutable, [pythonScript, title])
           
           let stdout = ''
@@ -113,7 +113,7 @@ export async function GET(request: NextRequest) {
               try {
                 const parsed = JSON.parse(stdout)
                 resolve(parsed)
-              } catch (e) {
+              } catch {
                 reject(new Error('Failed to parse Python output'))
               }
             } else {
@@ -130,8 +130,8 @@ export async function GET(request: NextRequest) {
           return NextResponse.json(result, { status: 200 })
         }
       }
-    } catch (pythonError: any) {
-      console.log('Python recommendation failed, falling back to JS:', pythonError?.message || 'Unknown error')
+    } catch (pythonError: unknown) {
+      console.log('Python recommendation failed, falling back to JS:', pythonError instanceof Error ? pythonError.message : 'Unknown error')
     }
 
     // Fallback to JavaScript implementation
