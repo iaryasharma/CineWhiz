@@ -82,7 +82,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json(transformedMovie)
     
   } catch (error) {
-    console.error('Error in movie details API:', error)
+    console.error('Error in movie details API:', error);
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : 'No stack trace',
+      hasApiKey: !!TMDB_API_KEY,
+      apiKeyPrefix: TMDB_API_KEY ? TMDB_API_KEY.substring(0, 8) + '...' : 'undefined'
+    });
     return NextResponse.json(
       { error: 'Failed to fetch movie details' },
       { status: 500 }

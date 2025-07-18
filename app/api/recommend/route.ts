@@ -46,18 +46,33 @@ async function initializeJsFallback() {
     }
     
     if (moviesData) {
-      processedMovies = moviesData.map((movie: Record<string, unknown>) => ({
-        id: movie.id as number,
-        title: movie.title as string,
-        titleLower: (movie.title as string).toLowerCase(),
-        tags: [
-          ...((movie.overview as string)?.split(' ') || []),
-          ...((movie.genres as string[]) || []),
-          ...((movie.cast as string[]) || []),
-          ...((movie.director as string[]) || []),
-          ...((movie.keywords as string[]) || [])
-        ].map(tag => tag.toLowerCase()).filter(Boolean)
-      }))
+      processedMovies = moviesData.map((movie: Record<string, unknown>) => {
+        // Ensure all required fields exist
+        const title = movie.title as string;
+        const overview = movie.overview as string;
+        const genres = movie.genres as string[] || [];
+        const cast = movie.cast as string[] || [];
+        const crew = movie.crew as string[] || [];
+        const keywords = movie.keywords as string[] || [];
+        
+        if (!title) {
+          console.warn('Movie without title found:', movie);
+          return null;
+        }
+        
+        return {
+          id: movie.id as number,
+          title,
+          titleLower: title.toLowerCase(),
+          tags: [
+            ...(overview?.split(' ') || []),
+            ...genres,
+            ...cast,
+            ...crew,
+            ...keywords
+          ].map(tag => tag.toLowerCase()).filter(Boolean)
+        };
+      }).filter(Boolean) as ProcessedMovie[];
       
       isJsFallbackInitialized = true
       console.log(`Initialized JS fallback with ${processedMovies.length} movies`)
@@ -65,7 +80,14 @@ async function initializeJsFallback() {
       console.log('Movies data not found or empty')
     }
   } catch (error) {
-    console.error('Failed to initialize JS fallback:', error)
+    console.error('Failed to initialize JS fallback:', error);
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : 'No stack trace',
+      cwd: process.cwd(),
+      publicDataPath: path.join(process.cwd(), 'public', 'data'),
+      fileExists: fs.existsSync(path.join(process.cwd(), 'public', 'data', 'movies.json'))
+    });
   }
 }
 
