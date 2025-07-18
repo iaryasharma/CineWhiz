@@ -12,9 +12,11 @@ export default function HomePage() {
   const [allMovies, setAllMovies] = useState<Movie[]>([])
   const [trendingMovies, setTrendingMovies] = useState<Movie[]>([])
   const [trendingInIndiaMovies, setTrendingInIndiaMovies] = useState<Movie[]>([])
-  const [actionMovies, setActionMovies] = useState<Movie[]>([])
+  const [actionThrillerMovies, setActionThrillerMovies] = useState<Movie[]>([])
+  const [adventureMovies, setAdventureMovies] = useState<Movie[]>([])
   const [comedyMovies, setComedyMovies] = useState<Movie[]>([])
-  const [dramaMovies, setDramaMovies] = useState<Movie[]>([])
+  const [animatedMovies, setAnimatedMovies] = useState<Movie[]>([])
+  const [horrorMovies, setHorrorMovies] = useState<Movie[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -49,14 +51,28 @@ export default function HomePage() {
         
         // Find specific genre IDs
         const actionGenre = genres.find((g: Record<string, unknown>) => g.name === 'Action')
+        const thrillerGenre = genres.find((g: Record<string, unknown>) => g.name === 'Thriller')
+        const adventureGenre = genres.find((g: Record<string, unknown>) => g.name === 'Adventure')
         const comedyGenre = genres.find((g: Record<string, unknown>) => g.name === 'Comedy')
-        const dramaGenre = genres.find((g: Record<string, unknown>) => g.name === 'Drama')
+        const animationGenre = genres.find((g: Record<string, unknown>) => g.name === 'Animation')
+        const horrorGenre = genres.find((g: Record<string, unknown>) => g.name === 'Horror')
         
-        // Fetch action movies
-        if (actionGenre) {
+        // Fetch Action & Thriller movies (combine both genres)
+        if (actionGenre && thrillerGenre) {
+          const actionThrillerResponse = await fetch(`/api/tmdb?category=discover&with_genres=${actionGenre.id},${thrillerGenre.id}`)
+          const actionThrillerData = await actionThrillerResponse.json()
+          setActionThrillerMovies(actionThrillerData.results || [])
+        } else if (actionGenre) {
           const actionResponse = await fetch(`/api/tmdb?category=discover&with_genres=${actionGenre.id}`)
           const actionData = await actionResponse.json()
-          setActionMovies(actionData.results || [])
+          setActionThrillerMovies(actionData.results || [])
+        }
+        
+        // Fetch adventure movies
+        if (adventureGenre) {
+          const adventureResponse = await fetch(`/api/tmdb?category=discover&with_genres=${adventureGenre.id}`)
+          const adventureData = await adventureResponse.json()
+          setAdventureMovies(adventureData.results || [])
         }
         
         // Fetch comedy movies
@@ -66,11 +82,18 @@ export default function HomePage() {
           setComedyMovies(comedyData.results || [])
         }
         
-        // Fetch drama movies
-        if (dramaGenre) {
-          const dramaResponse = await fetch(`/api/tmdb?category=discover&with_genres=${dramaGenre.id}`)
-          const dramaData = await dramaResponse.json()
-          setDramaMovies(dramaData.results || [])
+        // Fetch animated movies
+        if (animationGenre) {
+          const animatedResponse = await fetch(`/api/tmdb?category=discover&with_genres=${animationGenre.id}`)
+          const animatedData = await animatedResponse.json()
+          setAnimatedMovies(animatedData.results || [])
+        }
+        
+        // Fetch horror movies
+        if (horrorGenre) {
+          const horrorResponse = await fetch(`/api/tmdb?category=discover&with_genres=${horrorGenre.id}`)
+          const horrorData = await horrorResponse.json()
+          setHorrorMovies(horrorData.results || [])
         }
 
         // Set featured movie from trending
@@ -253,11 +276,21 @@ export default function HomePage() {
         {trendingInIndiaMovies.length > 0 && (
           <MovieSlider title="Trending in India" movies={trendingInIndiaMovies} onMovieClick={openMovieDetail} />
         )}
-        {actionMovies.length > 0 && (
-          <MovieSlider title="Action Thrillers" movies={actionMovies} onMovieClick={openMovieDetail} />
+        {actionThrillerMovies.length > 0 && (
+          <MovieSlider title="Action & Thriller" movies={actionThrillerMovies} onMovieClick={openMovieDetail} />
         )}
-        {comedyMovies.length > 0 && <MovieSlider title="Comedy" movies={comedyMovies} onMovieClick={openMovieDetail} />}
-        {dramaMovies.length > 0 && <MovieSlider title="Drama" movies={dramaMovies} onMovieClick={openMovieDetail} />}
+        {adventureMovies.length > 0 && (
+          <MovieSlider title="Adventure" movies={adventureMovies} onMovieClick={openMovieDetail} />
+        )}
+        {comedyMovies.length > 0 && (
+          <MovieSlider title="Comedy" movies={comedyMovies} onMovieClick={openMovieDetail} />
+        )}
+        {animatedMovies.length > 0 && (
+          <MovieSlider title="Animated" movies={animatedMovies} onMovieClick={openMovieDetail} />
+        )}
+        {horrorMovies.length > 0 && (
+          <MovieSlider title="Horror" movies={horrorMovies} onMovieClick={openMovieDetail} />
+        )}
       </div>
 
       {/* Movie Detail Modal */}

@@ -27,11 +27,27 @@ async function initializeJsFallback() {
   if (isJsFallbackInitialized) return
 
   try {
-    const moviesJsonPath = path.join(process.cwd(), 'public', 'data', 'movies.json')
-    
-    if (fs.existsSync(moviesJsonPath)) {
-      const moviesData = JSON.parse(fs.readFileSync(moviesJsonPath, 'utf-8'))
+    // Try to load from public folder first (for Vercel)
+    let moviesData;
+    try {
+      const publicResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/data/movies.json`);
+      if (publicResponse.ok) {
+        moviesData = await publicResponse.json();
+      } else {
+        throw new Error('Public fetch failed');
+      }
+    } catch {
+      // Fallback to file system read (for local development)
+      const moviesJsonPath = path.join(process.cwd(), 'public', 'data', 'movies.json')
       
+      if (fs.existsSync(moviesJsonPath)) {
+        moviesData = JSON.parse(fs.readFileSync(moviesJsonPath, 'utf-8'))
+      } else {
+        throw new Error('Movies data not found');
+      }
+    }
+    
+    if (moviesData) {
       processedMovies = moviesData.map((movie: Record<string, unknown>) => ({
         id: movie.id as number,
         title: movie.title as string,
@@ -47,6 +63,8 @@ async function initializeJsFallback() {
       
       isJsFallbackInitialized = true
       console.log(`Initialized JS fallback with ${processedMovies.length} movies`)
+    } else {
+      console.log('Movies data not found or empty')
     }
   } catch (error) {
     console.error('Failed to initialize JS fallback:', error)
@@ -88,11 +106,20 @@ export async function GET(request: NextRequest) {
 
     // Use JavaScript implementation for recommendations
     await initializeJsFallback()
+    
+    // Check if movies data was loaded
+    if (processedMovies.length === 0) {
+      return NextResponse.json(
+        { error: `Can't show recommendations for "${title}" as I'm currently trained on 5000 movies only and the movie database is not available` },
+        { status: 404 }
+      )
+    }
+    
     const recommendations = getJsRecommendations(title, 5)
     
     if (recommendations.length === 0) {
       return NextResponse.json(
-        { error: `Movie '${title}' not found` },
+        { error: `Can't show recommendations for "${title}" as I'm currently trained on 5000 movies only and this movie is not in my database` },
         { status: 404 }
       )
     }

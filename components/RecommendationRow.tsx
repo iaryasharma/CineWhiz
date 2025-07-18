@@ -60,7 +60,7 @@ export default function RecommendationRow({ movieId, movieTitle, onMovieClick }:
           }
         } else if (data && data.error && data.error.includes("not found")) {
           // Movie not found in database
-          setError(`Can&apos;t show recommendations for &quot;${movieTitle}&quot; as I&apos;m currently trained on 5000 movies only and this movie is not in my database.`)
+          setError(`Can't show recommendations for "${movieTitle}" as I'm currently trained on 5000 movies only and this movie is not in my database.`)
         } else {
           setError("Failed to generate recommendations")
         }
@@ -69,7 +69,7 @@ export default function RecommendationRow({ movieId, movieTitle, onMovieClick }:
         
         // Check if it's a 404 error (movie not found)
         if (error instanceof Error && error.message.includes("404")) {
-          setError(`Can&apos;t show recommendations for &quot;${movieTitle}&quot; as I&apos;m currently trained on 5000 movies only and this movie is not in my database.`)
+          setError(`Can't show recommendations for "${movieTitle}" as I'm currently trained on 5000 movies only and this movie is not in my database.`)
         } else {
           setError("Failed to fetch recommendations")
         }

@@ -21,6 +21,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     )
 
     if (!movieResponse.ok) {
+      if (movieResponse.status === 404) {
+        return NextResponse.json(
+          { error: 'Movie not found' },
+          { status: 404 }
+        )
+      }
       throw new Error(`TMDB API error: ${movieResponse.status}`)
     }
 

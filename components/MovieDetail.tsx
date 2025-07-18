@@ -2,17 +2,12 @@
 
 import { useState, useEffect } from "react"
 import Image from "next/image"
-import type { Movie, CastMember, CrewMember, Genre } from "@/types"
+import type { Movie, CastMember, CrewMember, Genre, ProductionCompany } from "@/types"
 import { formatDate } from "@/lib/utils"
 import WatchlistButton from "./WatchlistButton"
 import RecommendationRow from "./RecommendationRow"
 import Modal from "react-modal"
 import { XMarkIcon, StarIcon, PlayIcon } from "@heroicons/react/24/solid"
-
-// Set app element for accessibility
-if (typeof window !== 'undefined') {
-  Modal.setAppElement('body');
-}
 
 interface MovieDetailProps {
   movie: Movie
@@ -46,6 +41,17 @@ export default function MovieDetail({ movie, isOpen, onClose }: MovieDetailProps
   const [movieDetails, setMovieDetails] = useState<Movie | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
+  // Initialize modal app element
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        Modal.setAppElement(document.body);
+      } catch (error) {
+        console.warn('Could not set Modal app element:', error);
+      }
+    }
+  }, []);
+
   useEffect(() => {
     const fetchMovieDetails = async () => {
       if (!isOpen) return;
@@ -74,9 +80,13 @@ export default function MovieDetail({ movie, isOpen, onClose }: MovieDetailProps
   }, [movie.id, isOpen])
 
   const handleTrailerClick = () => {
+    // Check for trailer in movieDetails first
     if (movieDetails?.videos?.results && movieDetails.videos.results.length > 0) {
-      const trailer = movieDetails.videos.results[0]
-      if (trailer.site === 'YouTube') {
+      const trailer = movieDetails.videos.results.find(video => 
+        video.type === 'Trailer' && video.site === 'YouTube'
+      ) || movieDetails.videos.results[0]; // fallback to first video
+      
+      if (trailer && trailer.site === 'YouTube') {
         window.open(`https://www.youtube.com/watch?v=${trailer.key}`, '_blank', 'noopener,noreferrer')
       }
     }
@@ -87,6 +97,16 @@ export default function MovieDetail({ movie, isOpen, onClose }: MovieDetailProps
     ? `https://image.tmdb.org/t/p/original${displayMovie.backdrop_path}`
     : null
   const hasTrailer = movieDetails?.videos?.results && movieDetails.videos.results.length > 0
+
+  // Debug logging for production issues
+  console.log('MovieDetail Debug:', {
+    movieId: movie.id,
+    movieDetailsExists: !!movieDetails,
+    hasCredits: !!movieDetails?.credits,
+    hasGenres: !!displayMovie?.genres,
+    hasTrailer,
+    isLoading
+  })
 
   return (
     <Modal 
@@ -178,6 +198,7 @@ export default function MovieDetail({ movie, isOpen, onClose }: MovieDetailProps
             </div>
             
             <div className="w-full md:w-1/3 text-sm">
+              {/* Show cast if available */}
               {movieDetails?.credits?.cast && movieDetails.credits.cast.length > 0 && (
                 <div className="mb-4">
                   <span className="text-gray-400">Cast: </span>
@@ -185,6 +206,7 @@ export default function MovieDetail({ movie, isOpen, onClose }: MovieDetailProps
                 </div>
               )}
               
+              {/* Show director if available */}
               {movieDetails?.credits?.crew && movieDetails.credits.crew.length > 0 && (
                 <div className="mb-4">
                   <span className="text-gray-400">Director: </span>
@@ -192,19 +214,45 @@ export default function MovieDetail({ movie, isOpen, onClose }: MovieDetailProps
                 </div>
               )}
               
-              {displayMovie.genres && displayMovie.genres.length > 0 && (
+              {/* Show genres - prefer movieDetails genres but fallback to movie genres */}
+              {((movieDetails?.genres && movieDetails.genres.length > 0) || 
+                (displayMovie.genres && displayMovie.genres.length > 0)) && (
                 <div className="mb-4">
                   <span className="text-gray-400">Genres: </span>
-                  <span>{displayMovie.genres.map((genre: string | Genre) => 
-                    typeof genre === 'string' ? genre : genre.name
-                  ).join(", ")}</span>
+                  <span>
+                    {(movieDetails?.genres || displayMovie.genres || []).map((genre: string | Genre) => 
+                      typeof genre === 'string' ? genre : genre.name
+                    ).join(", ")}
+                  </span>
                 </div>
               )}
               
+              {/* Show runtime if available */}
+              {(movieDetails?.runtime || displayMovie.runtime) && (
+                <div className="mb-4">
+                  <span className="text-gray-400">Runtime: </span>
+                  <span>
+                    {(() => {
+                      const runtime = movieDetails?.runtime || displayMovie.runtime || 0;
+                      return `${Math.floor(runtime / 60)}h ${runtime % 60}m`;
+                    })()}
+                  </span>
+                </div>
+              )}
+              
+              {/* Show original language */}
               {displayMovie.original_language && (
-                <div>
+                <div className="mb-4">
                   <span className="text-gray-400">Language: </span>
                   <span>{displayMovie.original_language.toUpperCase()}</span>
+                </div>
+              )}
+              
+              {/* Show production companies if available */}
+              {movieDetails?.production_companies && movieDetails.production_companies.length > 0 && (
+                <div className="mb-4">
+                  <span className="text-gray-400">Production: </span>
+                  <span>{movieDetails.production_companies.slice(0, 2).map((company: ProductionCompany) => company.name).join(", ")}</span>
                 </div>
               )}
             </div>  

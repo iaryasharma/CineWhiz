@@ -8,6 +8,22 @@ if (!process.env.MONGODB_URI) {
   throw new Error("Please add your MongoDB URI to .env.local");
 }
 
+if (!process.env.GOOGLE_CLIENT_ID) {
+  throw new Error("Please add your Google Client ID to .env.local");
+}
+
+if (!process.env.GOOGLE_CLIENT_SECRET) {
+  throw new Error("Please add your Google Client Secret to .env.local");
+}
+
+if (!process.env.NEXTAUTH_SECRET) {
+  throw new Error("Please add your NextAuth Secret to .env.local");
+}
+
+if (!process.env.NEXTAUTH_URL) {
+  throw new Error("Please add your NextAuth URL to .env.local");
+}
+
 const client = new MongoClient(process.env.MONGODB_URI);
 export const clientPromise = client.connect();
 
@@ -36,7 +52,7 @@ export const authOptions: NextAuthOptions = {
     },
   },
   pages: {
-    signIn: "/signin",
+    signIn: "/auth/signin",
   },
   session: {
     strategy: "jwt",
