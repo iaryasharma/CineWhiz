@@ -46,7 +46,14 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 md:h-20">
           <div className="flex items-center">
-            <Link href="/" className="text-red-600 font-bold text-3xl md:text-4xl flex items-center">
+            <Link href="/" className="text-red-600 font-bold text-3xl md:text-4xl flex items-center gap-2">
+              <Image
+                src="/cinewhiz.png"
+                alt="CineWhiz Logo"
+                width={32}
+                height={32}
+                className="w-8 h-8 md:w-10 md:h-10"
+              />
               CineWhiz
             </Link>
             

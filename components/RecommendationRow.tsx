@@ -42,7 +42,7 @@ export default function RecommendationRow({ movieId, movieTitle, onMovieClick }:
           const recommendedTitles = data.recommended
 
           try {
-            // Fetch movies.json
+            // Fetch movies.json from public folder
             const moviesResponse = await fetch("/data/movies.json")
             if (!moviesResponse.ok) {
               throw new Error(`Movies data error: ${moviesResponse.status}`)
@@ -58,10 +58,21 @@ export default function RecommendationRow({ movieId, movieTitle, onMovieClick }:
             console.error("Error fetching movie data:", movieDataError)
             setError("Failed to load movie details")
           }
+        } else if (data && data.error && data.error.includes("not found")) {
+          // Movie not found in database
+          setError(`Can&apos;t show recommendations for &quot;${movieTitle}&quot; as I&apos;m currently trained on 5000 movies only and this movie is not in my database.`)
+        } else {
+          setError("Failed to generate recommendations")
         }
       } catch (error) {
         console.error("Error fetching recommendations:", error)
-        setError("Failed to fetch recommendations")
+        
+        // Check if it's a 404 error (movie not found)
+        if (error instanceof Error && error.message.includes("404")) {
+          setError(`Can&apos;t show recommendations for &quot;${movieTitle}&quot; as I&apos;m currently trained on 5000 movies only and this movie is not in my database.`)
+        } else {
+          setError("Failed to fetch recommendations")
+        }
       } finally {
         setLoading(false)
       }
@@ -161,13 +172,24 @@ export default function RecommendationRow({ movieId, movieTitle, onMovieClick }:
     return (
       <div className="mt-8">
         <h3 className="text-xl font-medium text-white mb-4">You might also like</h3>
-        <p className="text-red-400">{error}</p>
+        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+          <p className="text-gray-300 text-sm leading-relaxed">{error}</p>
+        </div>
       </div>
     )
   }
 
-  if (recommendations.length === 0) {
-    return null
+  if (recommendations.length === 0 && !loading && !error) {
+    return (
+      <div className="mt-8">
+        <h3 className="text-xl font-medium text-white mb-4">You might also like</h3>
+        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+          <p className="text-gray-300 text-sm leading-relaxed">
+            Can&apos;t show recommendations for &quot;{movieTitle}&quot; as I&apos;m currently trained on 5000 movies only and this movie is not in my database.
+          </p>
+        </div>
+      </div>
+    )
   }
 
   return (
