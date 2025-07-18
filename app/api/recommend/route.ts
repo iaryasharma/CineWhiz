@@ -30,13 +30,17 @@ async function initializeJsFallback() {
     // Try to load from public folder first (for Vercel)
     let moviesData;
     try {
-      // Use environment variables for URL construction
+      // For Vercel, use the current request URL or environment variable
       const baseUrl = process.env.VERCEL_URL 
         ? `https://${process.env.VERCEL_URL}` 
         : process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
       
       console.log('Fetching movies from:', `${baseUrl}/data/movies.json`);
-      const publicResponse = await fetch(`${baseUrl}/data/movies.json`);
+      const publicResponse = await fetch(`${baseUrl}/data/movies.json`, {
+        headers: {
+          'Cache-Control': 'no-cache',
+        }
+      });
       
       if (publicResponse.ok) {
         moviesData = await publicResponse.json();
@@ -48,13 +52,18 @@ async function initializeJsFallback() {
     } catch (error) {
       console.log('Public fetch error:', error);
       // Fallback to file system read (for local development)
-      const moviesJsonPath = path.join(process.cwd(), 'public', 'data', 'movies.json')
-      
-      if (fs.existsSync(moviesJsonPath)) {
-        moviesData = JSON.parse(fs.readFileSync(moviesJsonPath, 'utf-8'))
-        console.log('Successfully read movies data from file system');
-      } else {
-        console.log('Movies file not found at:', moviesJsonPath);
+      try {
+        const moviesJsonPath = path.join(process.cwd(), 'public', 'data', 'movies.json')
+        
+        if (fs.existsSync(moviesJsonPath)) {
+          moviesData = JSON.parse(fs.readFileSync(moviesJsonPath, 'utf-8'))
+          console.log('Successfully read movies data from file system');
+        } else {
+          console.log('Movies file not found at:', moviesJsonPath);
+          throw new Error('Movies data not found');
+        }
+      } catch (fsError) {
+        console.log('File system read error:', fsError);
         throw new Error('Movies data not found');
       }
     }
@@ -117,6 +126,11 @@ export async function GET(request: NextRequest) {
     }
 
     console.log('Recommendation requested for:', title);
+    console.log('Environment:', {
+      VERCEL_URL: process.env.VERCEL_URL,
+      NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL,
+      NODE_ENV: process.env.NODE_ENV
+    });
 
     // Use JavaScript implementation for recommendations
     try {

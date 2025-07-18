@@ -8,7 +8,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const { id } = await params
     const movieId = id
 
+    console.log('TMDB API request for movie ID:', movieId);
+
     if (!TMDB_API_KEY) {
+      console.error('TMDB API key not configured');
       return NextResponse.json(
         { error: 'TMDB API key not configured' },
         { status: 500 }
@@ -22,11 +25,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     if (!movieResponse.ok) {
       if (movieResponse.status === 404) {
+        console.log(`Movie with ID ${movieId} not found in TMDB`);
         return NextResponse.json(
           { error: 'Movie not found' },
           { status: 404 }
         )
       }
+      console.error(`TMDB API error: ${movieResponse.status}`);
       throw new Error(`TMDB API error: ${movieResponse.status}`)
     }
 
