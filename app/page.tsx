@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import Image from "next/image"
 import type { Movie } from "@/types"
 import MovieSlider from "@/components/MovieSlider"
@@ -96,13 +96,17 @@ export default function HomePage() {
           setHorrorMovies(horrorData.results || [])
         }
 
-        // Set featured movie from trending (top 5 for pagination)
+        // Set featured movie from trending (random 5 from top 20)
         if (trendingData.results && trendingData.results.length > 0) {
-          // Create a pool of top 5 featured movies from trending
-          const featuredPool = trendingData.results.slice(0, 5)
+          // Get top 20 trending movies
+          const top20Movies = trendingData.results.slice(0, Math.min(20, trendingData.results.length))
+          
+          // Shuffle and select 5 random movies from top 20
+          const shuffled = [...top20Movies].sort(() => Math.random() - 0.5)
+          const featuredPool = shuffled.slice(0, 5)
           setFeaturedMoviePool(featuredPool)
           
-          // Start with the first movie (index 0)
+          // Start with the first movie from the random selection (index 0)
           setCurrentFeaturedIndex(0)
           
           const featuredMovie = featuredPool[0]
@@ -127,7 +131,7 @@ export default function HomePage() {
   }, [])
 
   // Function to handle featured movie pagination
-  const goToFeaturedMovie = (index: number) => {
+  const goToFeaturedMovie = useCallback((index: number) => {
     if (featuredMoviePool.length > 0 && index >= 0 && index < featuredMoviePool.length) {
       setCurrentFeaturedIndex(index)
       const featuredMovie = featuredMoviePool[index]
@@ -140,17 +144,17 @@ export default function HomePage() {
         setFeaturedPosterUrl(`https://image.tmdb.org/t/p/w500${featuredMovie.poster_path}`)
       }
     }
-  }
+  }, [featuredMoviePool])
 
-  const nextFeaturedMovie = () => {
+  const nextFeaturedMovie = useCallback(() => {
     const nextIndex = (currentFeaturedIndex + 1) % featuredMoviePool.length
     goToFeaturedMovie(nextIndex)
-  }
+  }, [currentFeaturedIndex, featuredMoviePool.length, goToFeaturedMovie])
 
-  const prevFeaturedMovie = () => {
+  const prevFeaturedMovie = useCallback(() => {
     const prevIndex = currentFeaturedIndex === 0 ? featuredMoviePool.length - 1 : currentFeaturedIndex - 1
     goToFeaturedMovie(prevIndex)
-  }
+  }, [currentFeaturedIndex, featuredMoviePool.length, goToFeaturedMovie])
 
   useEffect(() => {
     // Handle URL changes for movie detail modal
@@ -188,7 +192,7 @@ export default function HomePage() {
       window.removeEventListener("popstate", handlePopState)
       window.removeEventListener("keydown", handleKeyPress)
     }
-  }, [allMovies, featuredMoviePool, currentFeaturedIndex])
+  }, [allMovies, featuredMoviePool, currentFeaturedIndex, nextFeaturedMovie, prevFeaturedMovie])
 
   // Update the movie detail URL
   useEffect(() => {

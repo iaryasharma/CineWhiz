@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef } from "react"
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/solid"
 import MovieCard from "./MovieCard"
 import type { Movie } from "@/types"
