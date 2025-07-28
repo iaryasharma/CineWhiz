@@ -111,8 +111,17 @@ export default function WatchlistRecommendations({
   const scrollLeft = () => {
     if (carouselRef.current) {
       const containerWidth = carouselRef.current.clientWidth
+      const scrollWidth = carouselRef.current.scrollWidth
+      const maxScroll = scrollWidth - containerWidth
       const scrollAmount = Math.min(containerWidth * 0.8, 300)
-      const newPosition = Math.max(0, scrollPosition - scrollAmount)
+      
+      let newPosition;
+      if (scrollPosition <= 0) {
+        // If at the beginning, go to the end (circular)
+        newPosition = maxScroll
+      } else {
+        newPosition = Math.max(0, scrollPosition - scrollAmount)
+      }
       
       carouselRef.current.scrollTo({
         left: newPosition,
@@ -128,9 +137,15 @@ export default function WatchlistRecommendations({
       const scrollWidth = carouselRef.current.scrollWidth
       const containerWidth = carouselRef.current.clientWidth
       const maxScroll = scrollWidth - containerWidth
-      
       const scrollAmount = Math.min(containerWidth * 0.8, 300)
-      const newPosition = Math.min(maxScroll, scrollPosition + scrollAmount)
+      
+      let newPosition;
+      if (scrollPosition >= maxScroll - 10) {
+        // If at the end, go to the beginning (circular)
+        newPosition = 0
+      } else {
+        newPosition = Math.min(maxScroll, scrollPosition + scrollAmount)
+      }
       
       carouselRef.current.scrollTo({
         left: newPosition,
@@ -155,17 +170,6 @@ export default function WatchlistRecommendations({
       return () => carousel.removeEventListener('scroll', handleScroll)
     }
   }, [])
-
-  // Calculate if the right button should be disabled
-  const isRightButtonDisabled = (): boolean => {
-    if (!carouselRef.current) return true;
-    
-    const scrollWidth = carouselRef.current.scrollWidth;
-    const containerWidth = carouselRef.current.clientWidth;
-    const maxScroll = scrollWidth - containerWidth;
-    
-    return scrollPosition >= maxScroll - 10 || maxScroll <= 0;
-  }
 
   // Handle movie selection
   const handleMovieClick = (movie: Movie) => {
@@ -205,13 +209,10 @@ export default function WatchlistRecommendations({
       </h3>
       
       <div className="relative group">
-        {/* Left scroll button */}
+        {/* Left scroll button - Always visible for circular pagination */}
         <button 
           onClick={scrollLeft}
-          className={`absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-black bg-opacity-70 hover:bg-opacity-90 rounded-full p-2 text-white transition-opacity ${
-            scrollPosition <= 0 ? 'opacity-0 cursor-default' : 'opacity-0 group-hover:opacity-100 cursor-pointer'
-          }`}
-          disabled={scrollPosition <= 0}
+          className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-black/60 hover:bg-black/80 rounded-full p-2 text-white opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110"
           aria-label="Scroll left"
         >
           <ChevronLeftIcon className="h-6 w-6" />
@@ -234,13 +235,10 @@ export default function WatchlistRecommendations({
           ))}
         </div>
 
-        {/* Right scroll button */}
+        {/* Right scroll button - Always visible for circular pagination */}
         <button 
           onClick={scrollRight}
-          className={`absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-black bg-opacity-70 hover:bg-opacity-90 rounded-full p-2 text-white transition-opacity ${
-            isRightButtonDisabled() ? 'opacity-0 cursor-default' : 'opacity-0 group-hover:opacity-100 cursor-pointer'
-          }`}
-          disabled={isRightButtonDisabled()}
+          className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-black/60 hover:bg-black/80 rounded-full p-2 text-white opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110"
           aria-label="Scroll right"
         >
           <ChevronRightIcon className="h-6 w-6" />

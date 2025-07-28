@@ -96,17 +96,16 @@ export default function HomePage() {
           setHorrorMovies(horrorData.results || [])
         }
 
-        // Set featured movie from trending
+        // Set featured movie from trending (top 5 for pagination)
         if (trendingData.results && trendingData.results.length > 0) {
-          // Create a pool of featured movies from top trending
-          const featuredPool = trendingData.results.slice(0, 10)
+          // Create a pool of top 5 featured movies from trending
+          const featuredPool = trendingData.results.slice(0, 5)
           setFeaturedMoviePool(featuredPool)
           
-          // Select a random movie from the pool on page load
-          const randomIndex = Math.floor(Math.random() * featuredPool.length)
-          setCurrentFeaturedIndex(randomIndex)
+          // Start with the first movie (index 0)
+          setCurrentFeaturedIndex(0)
           
-          const featuredMovie = featuredPool[randomIndex]
+          const featuredMovie = featuredPool[0]
           setSelectedMovie(featuredMovie)
           
           // Set featured poster/backdrop
@@ -127,29 +126,31 @@ export default function HomePage() {
     fetchMovies()
   }, [])
 
-  // Rotate featured movie every 2 minutes
-  useEffect(() => {
-    if (featuredMoviePool.length === 0) return
-
-    const rotateMovie = () => {
-      const nextIndex = (currentFeaturedIndex + 1) % featuredMoviePool.length
-      setCurrentFeaturedIndex(nextIndex)
-      
-      const nextMovie = featuredMoviePool[nextIndex]
-      setSelectedMovie(nextMovie)
+  // Function to handle featured movie pagination
+  const goToFeaturedMovie = (index: number) => {
+    if (featuredMoviePool.length > 0 && index >= 0 && index < featuredMoviePool.length) {
+      setCurrentFeaturedIndex(index)
+      const featuredMovie = featuredMoviePool[index]
+      setSelectedMovie(featuredMovie)
       
       // Update poster/backdrop
-      if (nextMovie.backdrop_path) {
-        setFeaturedPosterUrl(`https://image.tmdb.org/t/p/original${nextMovie.backdrop_path}`)
-      } else if (nextMovie.poster_path) {
-        setFeaturedPosterUrl(`https://image.tmdb.org/t/p/w500${nextMovie.poster_path}`)
+      if (featuredMovie.backdrop_path) {
+        setFeaturedPosterUrl(`https://image.tmdb.org/t/p/original${featuredMovie.backdrop_path}`)
+      } else if (featuredMovie.poster_path) {
+        setFeaturedPosterUrl(`https://image.tmdb.org/t/p/w500${featuredMovie.poster_path}`)
       }
     }
+  }
 
-    const interval = setInterval(rotateMovie, 120000) // 2 minutes
+  const nextFeaturedMovie = () => {
+    const nextIndex = (currentFeaturedIndex + 1) % featuredMoviePool.length
+    goToFeaturedMovie(nextIndex)
+  }
 
-    return () => clearInterval(interval)
-  }, [featuredMoviePool, currentFeaturedIndex])
+  const prevFeaturedMovie = () => {
+    const prevIndex = currentFeaturedIndex === 0 ? featuredMoviePool.length - 1 : currentFeaturedIndex - 1
+    goToFeaturedMovie(prevIndex)
+  }
 
   useEffect(() => {
     // Handle URL changes for movie detail modal
@@ -159,7 +160,17 @@ export default function HomePage() {
       }
     }
 
+    // Handle keyboard navigation for featured movies
+    const handleKeyPress = (event: KeyboardEvent) => {
+      if (event.key === 'ArrowLeft' && featuredMoviePool.length > 1) {
+        prevFeaturedMovie()
+      } else if (event.key === 'ArrowRight' && featuredMoviePool.length > 1) {
+        nextFeaturedMovie()
+      }
+    }
+
     window.addEventListener("popstate", handlePopState)
+    window.addEventListener("keydown", handleKeyPress)
 
     // Check for initial movie in URL
     if (window.location.hash) {
@@ -175,8 +186,9 @@ export default function HomePage() {
 
     return () => {
       window.removeEventListener("popstate", handlePopState)
+      window.removeEventListener("keydown", handleKeyPress)
     }
-  }, [allMovies])
+  }, [allMovies, featuredMoviePool, currentFeaturedIndex])
 
   // Update the movie detail URL
   useEffect(() => {
@@ -226,6 +238,51 @@ export default function HomePage() {
           <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent" />
         </div>
+
+        {/* Featured Movie Pagination - Centered at bottom */}
+        {featuredMoviePool.length > 1 && (
+          <>
+            {/* Left Arrow - Responsive positioning and sizing */}
+            <button
+              onClick={prevFeaturedMovie}
+              className="absolute left-2 sm:left-4 top-1/2 transform -translate-y-1/2 z-20 bg-black/60 hover:bg-black/80 text-white p-2 sm:p-3 rounded-full transition-all duration-200 backdrop-blur-sm hover:scale-110"
+              aria-label="Previous featured movie"
+            >
+              <svg className="w-4 h-4 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+
+            {/* Right Arrow - Responsive positioning and sizing */}
+            <button
+              onClick={nextFeaturedMovie}
+              className="absolute right-2 sm:right-4 top-1/2 transform -translate-y-1/2 z-20 bg-black/60 hover:bg-black/80 text-white p-2 sm:p-3 rounded-full transition-all duration-200 backdrop-blur-sm hover:scale-110"
+              aria-label="Next featured movie"
+            >
+              <svg className="w-4 h-4 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+
+            {/* Dots indicator - Hidden on mobile, visible on tablet+ with responsive spacing */}
+            <div className="absolute bottom-20 sm:bottom-24 md:bottom-32 lg:bottom-32 left-1/2 transform -translate-x-1/2 z-20 hidden sm:block">
+              <div className="flex items-center justify-center gap-2">
+                {featuredMoviePool.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => goToFeaturedMovie(index)}
+                    className={`w-2 h-2 sm:w-3 sm:h-3 md:w-3 md:h-3 rounded-full transition-all duration-300 ${
+                      index === currentFeaturedIndex 
+                        ? 'bg-white scale-125 shadow-lg' 
+                        : 'bg-white/50 hover:bg-white/80 hover:scale-110'
+                    }`}
+                    aria-label={`Go to featured movie ${index + 1}`}
+                  />
+                ))}
+              </div>
+            </div>
+          </>
+        )}
 
         {/* Content with better padding */}
         <div className="absolute bottom-0 left-0 w-full px-4 sm:px-8 md:px-20 pb-16 sm:pb-24 md:pb-32 z-10 hero-content">
